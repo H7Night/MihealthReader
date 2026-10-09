@@ -5,12 +5,13 @@ import java.io.File
 import java.time.LocalDateTime
 
 data class Snapshot(
+    val root: File,
     val directory: File,
     val sourcePackage: String,
     val files: List<File>,
 )
 
-interface Extractor {
+fun interface Extractor {
     fun extract(target: TargetApp, exportsDir: File): Snapshot
 }
 
@@ -20,7 +21,8 @@ class DbExtractor(
 ) : Extractor {
 
     override fun extract(target: TargetApp, exportsDir: File): Snapshot {
-        val directory = File(exportsDir, "${timestamp()}/raw/${target.packageName}/databases")
+        val root = File(exportsDir, timestamp())
+        val directory = File(root, "raw/${target.packageName}/databases")
         directory.mkdirs()
 
         val files = target.dbFiles.map { name ->
@@ -31,6 +33,6 @@ class DbExtractor(
             dest
         }
 
-        return Snapshot(directory, target.packageName, files)
+        return Snapshot(root, directory, target.packageName, files)
     }
 }

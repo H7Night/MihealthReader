@@ -8,7 +8,7 @@ data class TargetApp(
     val dbFiles: List<String>,
 )
 
-interface TargetFinder {
+fun interface TargetFinder {
     fun findCandidates(): List<TargetApp>
 }
 

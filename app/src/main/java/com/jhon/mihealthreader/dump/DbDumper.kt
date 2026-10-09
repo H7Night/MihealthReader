@@ -20,7 +20,7 @@ data class DbDumpResult(
     val error: String? = null,
 )
 
-interface Dumper {
+fun interface Dumper {
     fun dump(dbFile: File, jsonDir: File): DbDumpResult
 }
 
