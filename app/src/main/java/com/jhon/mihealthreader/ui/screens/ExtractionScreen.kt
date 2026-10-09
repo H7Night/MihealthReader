@@ -42,7 +42,9 @@ fun ExtractionScreen(
 
             is ExtractionState.Success -> {
                 Text("完成：共 ${state.tableCount} 张表")
-                Text("睡眠 ${state.sleepSessions} 段 · 活动 ${state.activityDays} 天")
+                Text(
+                    if (state.newRecords > 0) "新增 ${state.newRecords} 条记录" else "无新数据"
+                )
                 Text(state.snapshot.absolutePath, style = MaterialTheme.typography.bodySmall)
                 Button(onClick = onBrowse) { Text("浏览数据") }
                 Button(onClick = onActivity) { Text("活动视图") }

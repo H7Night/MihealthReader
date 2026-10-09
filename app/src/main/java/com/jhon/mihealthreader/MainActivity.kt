@@ -13,6 +13,8 @@ import com.jhon.mihealthreader.dump.DbDumper
 import com.jhon.mihealthreader.dump.ManifestWriter
 import com.jhon.mihealthreader.extract.DbExtractor
 import com.jhon.mihealthreader.extract.SuSourceReader
+import com.jhon.mihealthreader.local.LocalStore
+import com.jhon.mihealthreader.local.MiHealthDatabase
 import com.jhon.mihealthreader.root.LibsuRootShell
 import com.jhon.mihealthreader.ui.AppNav
 import com.jhon.mihealthreader.ui.ExtractionViewModel
@@ -26,6 +28,7 @@ class MainActivity : ComponentActivity() {
         val exportsDir = File(filesDir, "exports")
         val repository = ExportRepository(exportsDir)
         val parsedRepository = ParsedRepository(exportsDir)
+        val localStore = LocalStore(MiHealthDatabase.build(applicationContext))
         val scanner = PackageScanner {
             packageManager.getInstalledPackages(0).map { it.packageName }
         }
@@ -39,6 +42,7 @@ class MainActivity : ComponentActivity() {
             androidVersion = Build.VERSION.SDK_INT,
             appVersion = "0.1.0",
             exportsDir = exportsDir,
+            localStore = localStore,
         )
 
         setContent {

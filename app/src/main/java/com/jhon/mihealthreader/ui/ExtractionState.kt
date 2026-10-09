@@ -8,8 +8,7 @@ sealed interface ExtractionState {
     data class Success(
         val snapshot: File,
         val tableCount: Int,
-        val sleepSessions: Int,
-        val activityDays: Int,
+        val newRecords: Int,
     ) : ExtractionState
     data class Error(val message: String) : ExtractionState
 }

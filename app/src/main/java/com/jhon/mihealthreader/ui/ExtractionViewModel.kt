@@ -8,6 +8,8 @@ import com.jhon.mihealthreader.dump.Dumper
 import com.jhon.mihealthreader.dump.ManifestData
 import com.jhon.mihealthreader.dump.ManifestWriter
 import com.jhon.mihealthreader.extract.Extractor
+import com.jhon.mihealthreader.local.LocalStore
+import com.jhon.mihealthreader.local.LocalSummary
 import com.jhon.mihealthreader.parse.Normalizer
 import com.jhon.mihealthreader.root.RootShell
 import kotlinx.coroutines.CoroutineDispatcher
@@ -30,6 +32,7 @@ class ExtractionViewModel(
     private val appVersion: String,
     private val exportsDir: File,
     private val normalizer: Normalizer = Normalizer(),
+    private val localStore: LocalStore,
     private val io: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
 
@@ -39,11 +42,15 @@ class ExtractionViewModel(
     private val _rootGranted = MutableStateFlow<Boolean?>(null)
     val rootGranted: StateFlow<Boolean?> = _rootGranted.asStateFlow()
 
+    private val _summary = MutableStateFlow(LocalSummary(null, null, 0, 0))
+    val summary: StateFlow<LocalSummary> = _summary.asStateFlow()
+
     private var running = false
 
     init {
         viewModelScope.launch(io) {
             _rootGranted.value = rootShell.isRootGranted()
+            _summary.value = localStore.summary()
         }
     }
 
@@ -90,13 +97,20 @@ class ExtractionViewModel(
                 )
 
                 _state.value = ExtractionState.Running("解析睡眠与步数")
-                val normalized = normalizer.normalize(snapshot.root)
+                val parsed = normalizer.normalize(snapshot.root)
+
+                val saved = localStore.save(
+                    sleep = parsed.sleep,
+                    samples = parsed.samples,
+                    sourcePackage = snapshot.sourcePackage,
+                    at = System.currentTimeMillis(),
+                )
+                _summary.value = localStore.summary()
 
                 _state.value = ExtractionState.Success(
                     snapshot = snapshot.root,
                     tableCount = results.sumOf { it.tables.size },
-                    sleepSessions = normalized.sleep.size,
-                    activityDays = normalized.activity.size,
+                    newRecords = saved.newSamples + saved.newStages,
                 )
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e

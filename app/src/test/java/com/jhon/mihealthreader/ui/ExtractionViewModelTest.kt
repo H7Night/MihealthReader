@@ -9,8 +9,12 @@ import com.jhon.mihealthreader.dump.ManifestWriter
 import com.jhon.mihealthreader.dump.TableDump
 import com.jhon.mihealthreader.extract.Extractor
 import com.jhon.mihealthreader.extract.Snapshot
+import com.jhon.mihealthreader.local.LocalStore
+import com.jhon.mihealthreader.local.MiHealthDatabase
+import com.jhon.mihealthreader.parse.StepSample
 import com.jhon.mihealthreader.root.RootShell
 import com.jhon.mihealthreader.root.ShellOutput
+import androidx.room.Room
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -27,6 +31,7 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 import java.io.File
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -38,11 +43,23 @@ class ExtractionViewModelTest {
 
     private val main = StandardTestDispatcher()
 
+    private lateinit var db: MiHealthDatabase
+    private lateinit var store: LocalStore
+
     @Before
-    fun setUp() = Dispatchers.setMain(main)
+    fun setUp() {
+        Dispatchers.setMain(main)
+        db = Room.inMemoryDatabaseBuilder(RuntimeEnvironment.getApplication(), MiHealthDatabase::class.java)
+            .allowMainThreadQueries()
+            .build()
+        store = LocalStore(db)
+    }
 
     @After
-    fun tearDown() = Dispatchers.resetMain()
+    fun tearDown() {
+        Dispatchers.resetMain()
+        db.close()
+    }
 
     private fun granted() = object : RootShell {
         override fun run(vararg commands: String) =
@@ -65,6 +82,7 @@ class ExtractionViewModelTest {
         androidVersion = 34,
         appVersion = "0.1.0",
         exportsDir = tmp.root,
+        localStore = store,
         io = main,
     )
 
@@ -119,7 +137,28 @@ class ExtractionViewModelTest {
 
         val state = vm.state.value as ExtractionState.Success
         assertEquals(1, state.tableCount)
+        assertEquals(0, state.newRecords)
         assertTrue(File(state.snapshot, "manifest.json").exists())
+    }
+
+    @Test
+    fun `summary reflects preloaded local store`() = runTest(main) {
+        store.save(
+            sleep = emptyList(),
+            samples = listOf(StepSample("dev", 0, 0, 10, 5, 1)),
+            sourcePackage = "com.mi.health",
+            at = 1000,
+        )
+        val vm = viewModel(
+            granted(),
+            { emptyList() },
+            { _, _ -> error("extractor should not run") },
+            { _, _ -> error("dumper should not run") },
+            ManifestWriter(),
+        )
+        advanceUntilIdle()
+        assertEquals(1, vm.summary.value.stepSamples)
+        assertEquals(1000L, vm.summary.value.lastExtractedAt)
     }
 
     @Test
