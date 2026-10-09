@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
 import com.jhon.mihealthreader.data.ExportRepository
+import com.jhon.mihealthreader.data.ParsedRepository
 import com.jhon.mihealthreader.discover.PackageScanner
 import com.jhon.mihealthreader.discover.TargetLocator
 import com.jhon.mihealthreader.dump.DbDumper
@@ -24,6 +25,7 @@ class MainActivity : ComponentActivity() {
         val shell = LibsuRootShell()
         val exportsDir = File(filesDir, "exports")
         val repository = ExportRepository(exportsDir)
+        val parsedRepository = ParsedRepository(exportsDir)
         val scanner = PackageScanner {
             packageManager.getInstalledPackages(0).map { it.packageName }
         }
@@ -41,7 +43,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             MaterialTheme {
-                AppNav(extractionViewModel, repository)
+                AppNav(extractionViewModel, repository, parsedRepository)
             }
         }
     }

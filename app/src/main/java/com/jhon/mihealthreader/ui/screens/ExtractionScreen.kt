@@ -18,6 +18,7 @@ fun ExtractionScreen(
     rootGranted: Boolean?,
     onStart: () -> Unit,
     onBrowse: () -> Unit,
+    onActivity: () -> Unit,
 ) {
     Column(
         modifier = Modifier.fillMaxSize().padding(24.dp),
@@ -43,6 +44,7 @@ fun ExtractionScreen(
                 Text("睡眠 ${state.sleepSessions} 段 · 活动 ${state.activityDays} 天")
                 Text(state.snapshot.absolutePath, style = MaterialTheme.typography.bodySmall)
                 Button(onClick = onBrowse) { Text("浏览数据") }
+                Button(onClick = onActivity) { Text("活动视图") }
             }
 
             is ExtractionState.Error -> {

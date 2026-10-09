@@ -10,7 +10,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.jhon.mihealthreader.data.ExportRepository
+import com.jhon.mihealthreader.data.ParsedRepository
 import com.jhon.mihealthreader.data.TableEntry
+import com.jhon.mihealthreader.ui.screens.ActivityScreen
 import com.jhon.mihealthreader.ui.screens.ExtractionScreen
 import com.jhon.mihealthreader.ui.screens.TableDetailScreen
 import com.jhon.mihealthreader.ui.screens.TableListScreen
@@ -19,6 +21,7 @@ import com.jhon.mihealthreader.ui.screens.TableListScreen
 fun AppNav(
     extractionViewModel: ExtractionViewModel,
     repository: ExportRepository,
+    parsedRepository: ParsedRepository,
 ) {
     val navController = rememberNavController()
 
@@ -31,6 +34,14 @@ fun AppNav(
                 rootGranted = rootGranted,
                 onStart = { extractionViewModel.start() },
                 onBrowse = { navController.navigate("browse") },
+                onActivity = { navController.navigate("activity") },
+            )
+        }
+
+        composable("activity") {
+            ActivityScreen(
+                activity = parsedRepository.dailyActivity(),
+                onBack = { navController.popBackStack() },
             )
         }
 
