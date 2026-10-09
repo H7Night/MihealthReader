@@ -30,7 +30,6 @@ import java.time.YearMonth
 @Composable
 fun ChartsScreen(parsedRepository: ParsedRepository) {
     var metric by remember { mutableStateOf(Metric.STEPS) }
-    var timeMode by remember { mutableStateOf(TimeMode.LAST_N) }
     var yearMonth by remember { mutableStateOf(YearMonth.now()) }
 
     Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
@@ -51,22 +50,7 @@ fun ChartsScreen(parsedRepository: ParsedRepository) {
             }
         }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(
-                selected = timeMode == TimeMode.LAST_N,
-                onClick = { timeMode = TimeMode.LAST_N },
-                label = { Text("最近10次") },
-            )
-            FilterChip(
-                selected = timeMode == TimeMode.MONTH,
-                onClick = { timeMode = TimeMode.MONTH },
-                label = { Text("按月") },
-            )
-        }
-
-        if (timeMode == TimeMode.MONTH) {
-            MonthSelector(yearMonth = yearMonth, onChange = { yearMonth = it })
-        }
+        MonthSelector(yearMonth = yearMonth, onChange = { yearMonth = it })
 
         Surface(
             color = MaterialTheme.colorScheme.surfaceVariant,
@@ -77,7 +61,6 @@ fun ChartsScreen(parsedRepository: ParsedRepository) {
                 MetricChartView(
                     metric = metric,
                     parsedRepository = parsedRepository,
-                    timeMode = timeMode,
                     yearMonth = yearMonth,
                     modifier = Modifier.fillMaxWidth(),
                 )
