@@ -1,5 +1,6 @@
 package com.jhon.mihealthreader.discover
 
+import android.util.Log
 import com.jhon.mihealthreader.root.RootShell
 
 data class TargetApp(
@@ -28,6 +29,7 @@ class TargetLocator(
         return candidates.mapNotNull { pkg ->
             val path = "/data/data/$pkg/databases"
             val output = rootShell.run("find", path, "-type", "f")
+            Log.d("MHR", "pkg=$pkg exit=${output.exitCode} files=${output.stdout.size}")
             if (output.exitCode == 0 && output.stdout.isNotEmpty()) {
                 val relativeFiles = output.stdout
                     .filter { it.startsWith("$path/") }

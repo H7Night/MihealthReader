@@ -3,7 +3,6 @@ package com.jhon.mihealthreader.dump
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.util.Base64
-import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 
@@ -71,19 +70,24 @@ class DbDumper(private val rowLimit: Int = Int.MAX_VALUE) : Dumper {
     }
 
     private fun dumpTable(db: SQLiteDatabase, table: String, outFile: File): Int {
-        val array = JSONArray()
         val limitClause = if (rowLimit == Int.MAX_VALUE) "" else " LIMIT $rowLimit"
-        db.rawQuery("SELECT * FROM ${quote(table)}$limitClause", null).use { cursor ->
-            while (cursor.moveToNext()) {
-                val row = JSONObject()
-                for (i in 0 until cursor.columnCount) {
-                    row.put(cursor.getColumnName(i), valueOf(cursor, i))
+        var count = 0
+        outFile.bufferedWriter().use { writer ->
+            writer.write("[")
+            db.rawQuery("SELECT * FROM ${quote(table)}$limitClause", null).use { cursor ->
+                while (cursor.moveToNext()) {
+                    if (count > 0) writer.write(",")
+                    val row = JSONObject()
+                    for (i in 0 until cursor.columnCount) {
+                        row.put(cursor.getColumnName(i), valueOf(cursor, i))
+                    }
+                    writer.write(row.toString())
+                    count++
                 }
-                array.put(row)
             }
+            writer.write("]")
         }
-        outFile.writeText(array.toString())
-        return array.length()
+        return count
     }
 
     private fun valueOf(cursor: Cursor, index: Int): Any = when (cursor.getType(index)) {

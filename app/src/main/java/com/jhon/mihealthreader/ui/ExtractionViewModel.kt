@@ -88,7 +88,9 @@ class ExtractionViewModel(
                 )
 
                 _state.value = ExtractionState.Success(snapshot.root, results.sumOf { it.tables.size })
-            } catch (e: Exception) {
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Throwable) {
                 _state.value = ExtractionState.Error(e.message ?: e.toString())
             } finally {
                 running = false

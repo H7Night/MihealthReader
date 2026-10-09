@@ -14,3 +14,10 @@ interface RootShell {
         return output.exitCode == 0 && output.stdout.any { it.contains("uid=0") }
     }
 }
+
+private val SAFE_ARG = Regex("[A-Za-z0-9_./=:@,+-]+")
+
+internal fun buildShellCommand(commands: Array<out String>): String =
+    commands.joinToString(" ") { arg ->
+        if (arg.matches(SAFE_ARG)) arg else "'" + arg.replace("'", "'\\''") + "'"
+    }

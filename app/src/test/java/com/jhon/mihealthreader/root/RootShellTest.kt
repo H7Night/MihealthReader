@@ -1,5 +1,6 @@
 package com.jhon.mihealthreader.root
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -26,5 +27,18 @@ class RootShellTest {
     fun `not granted when command fails`() {
         val shell = fake(ShellOutput(1, emptyList(), listOf("permission denied")))
         assertFalse(shell.isRootGranted())
+    }
+
+    @Test
+    fun `joins args into a single command`() {
+        assertEquals(
+            "find /data/data/com.mi.health/databases -type f",
+            buildShellCommand(arrayOf("find", "/data/data/com.mi.health/databases", "-type", "f")),
+        )
+    }
+
+    @Test
+    fun `quotes args containing spaces`() {
+        assertEquals("echo 'a b'", buildShellCommand(arrayOf("echo", "a b")))
     }
 }

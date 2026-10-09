@@ -4,7 +4,7 @@ import com.topjohnwu.superuser.Shell
 
 class LibsuRootShell : RootShell {
     override fun run(vararg commands: String): ShellOutput {
-        val result = Shell.cmd(*commands).exec()
+        val result = Shell.cmd(buildShellCommand(commands)).exec()
         return ShellOutput(result.code, result.out, result.err)
     }
 }
