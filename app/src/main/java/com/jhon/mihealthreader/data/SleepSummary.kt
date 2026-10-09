@@ -54,17 +54,22 @@ object SleepSummary {
     fun isNightSleep(session: SleepSession, zone: ZoneId = ZoneId.systemDefault()): Boolean =
         bedtimeMinutes(session, zone) < 720
 
-    fun describe(session: SleepSession, zone: ZoneId = ZoneId.systemDefault()): String {
+    fun interpret(session: SleepSession): String {
         val deepPct = deepRatioPct(session)
-        val quality = when {
+        return when {
             session.durationMinutes >= 420 && deepPct >= 25 -> "睡眠质量良好"
             deepPct < 15 -> "深睡偏少，建议关注睡眠环境"
             session.durationMinutes < 360 -> "睡眠时长偏短"
             else -> "睡眠质量一般"
         }
-        return "$quality。睡眠 ${formatMinutes(session.durationMinutes)}，" +
-            "${hhmm(session.start, zone)} 入睡，${hhmm(session.end, zone)} 起床，深睡占比 $deepPct%。"
     }
+
+    fun details(session: SleepSession, zone: ZoneId = ZoneId.systemDefault()): String =
+        "睡眠 ${formatMinutes(session.durationMinutes)}，${hhmm(session.start, zone)} 入睡，" +
+            "${hhmm(session.end, zone)} 起床，深睡占比 ${deepRatioPct(session)}%。"
+
+    fun describe(session: SleepSession, zone: ZoneId = ZoneId.systemDefault()): String =
+        "${interpret(session)}。${details(session, zone)}"
 
     private fun formatMinutes(minutes: Int): String = "${minutes / 60} 小时 ${minutes % 60} 分钟"
 }

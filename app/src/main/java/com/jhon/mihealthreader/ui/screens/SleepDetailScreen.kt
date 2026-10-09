@@ -105,6 +105,18 @@ fun SleepDetailScreen(
             shape = RoundedCornerShape(24.dp),
             modifier = Modifier.fillMaxWidth(),
         ) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("睡眠解读", style = MaterialTheme.typography.titleMedium)
+                Text(SleepSummary.interpret(session), style = MaterialTheme.typography.bodyLarge)
+                Text(SleepSummary.details(session), style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            shape = RoundedCornerShape(24.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("全天睡眠", style = MaterialTheme.typography.titleMedium)
                 Text(formatMinutesCn(session.durationMinutes), style = MaterialTheme.typography.headlineMedium)
@@ -128,17 +140,6 @@ fun SleepDetailScreen(
                 } else {
                     Text("无阶段数据")
                 }
-            }
-        }
-
-        Surface(
-            color = MaterialTheme.colorScheme.surfaceVariant,
-            shape = RoundedCornerShape(24.dp),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("睡眠详情", style = MaterialTheme.typography.titleMedium)
-                Text(SleepSummary.describe(session), style = MaterialTheme.typography.bodyMedium)
             }
         }
 
