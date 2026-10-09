@@ -140,6 +140,13 @@ adb exec-out run-as com.jhon.mihealthreader tar -c files/exports | tar -x
 - **移除原调试页**：删除"浏览原始表（调试）"入口及其相关代码（`TableListScreen`/`TableDetailScreen`/`BrowserViewModel`/`ExportRepository`）。
 - 74 个单元测试全绿，`lintDebug`/`assembleDebug` 通过。
 
+## 17. 启动"跳转页面"修复（2026-10-09，通过）
+
+- 现象：冷启动时先出现一页（默认安卓机器人图标）再进入主界面。
+- 根因（证据：冷启动帧截图）：Android 12+ **系统 Splash 屏**默认使用 App 图标；本应用未设置 `android:icon`、主题也无 splash 配置，故显示默认机器人图标。
+- 修复：`values-v31/themes.xml` 设置 `windowSplashScreenBackground` = 应用背景色、`windowSplashScreenAnimatedIcon` = 透明；`windowBackground` = 应用背景色。
+- 验证：冷启动帧现为**纯背景（无图标）**，随后无缝进入"今天"。
+
 ## 15. 视图图表视觉优化（参考小米运动健康 + MD3，2026-10-09，通过）
 
 - **头部大数值**：区间代表值（最新）+ 单位。
