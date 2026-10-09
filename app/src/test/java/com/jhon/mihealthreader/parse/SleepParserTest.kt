@@ -17,7 +17,7 @@ class SleepParserTest {
         assertEquals(1060L, session.end)
         assertEquals(1, session.deepMinutes)
         assertEquals(50, session.avgHr)
-        assertEquals("deep", session.stages.single().stateName)
+        assertEquals("light", session.stages.single().stateName)
     }
 
     @Test
@@ -32,10 +32,9 @@ class SleepParserTest {
 
     @Test
     fun `state name mapping`() {
-        assertEquals("awake", SleepParser.stateName(1))
-        assertEquals("light", SleepParser.stateName(2))
-        assertEquals("deep", SleepParser.stateName(3))
-        assertEquals("rem", SleepParser.stateName(4))
+        assertEquals("deep", SleepParser.stateName(2))
+        assertEquals("light", SleepParser.stateName(3))
+        assertEquals("awake", SleepParser.stateName(5))
         assertEquals("unknown", SleepParser.stateName(9))
     }
 }

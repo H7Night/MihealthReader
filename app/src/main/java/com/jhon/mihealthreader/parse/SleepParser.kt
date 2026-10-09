@@ -6,10 +6,9 @@ import org.json.JSONObject
 object SleepParser {
 
     fun stateName(state: Int): String = when (state) {
-        1 -> "awake"
-        2 -> "light"
-        3 -> "deep"
-        4 -> "rem"
+        2 -> "deep"
+        3 -> "light"
+        5 -> "awake"
         else -> "unknown"
     }
 
