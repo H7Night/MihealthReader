@@ -27,8 +27,8 @@ class MainActivity : ComponentActivity() {
         val shell = LibsuRootShell()
         val exportsDir = File(filesDir, "exports")
         val repository = ExportRepository(exportsDir)
-        val parsedRepository = ParsedRepository(exportsDir)
         val localStore = LocalStore(MiHealthDatabase.build(applicationContext))
+        val parsedRepository = ParsedRepository(localStore)
         val scanner = PackageScanner {
             packageManager.getInstalledPackages(0).map { it.packageName }
         }

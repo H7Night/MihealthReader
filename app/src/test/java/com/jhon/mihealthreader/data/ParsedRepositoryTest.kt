@@ -1,57 +1,73 @@
 package com.jhon.mihealthreader.data
 
+import androidx.room.Room
+import com.jhon.mihealthreader.local.LocalStore
+import com.jhon.mihealthreader.local.MiHealthDatabase
+import com.jhon.mihealthreader.parse.SleepSession
+import com.jhon.mihealthreader.parse.SleepStage
+import com.jhon.mihealthreader.parse.StepSample
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Rule
+import org.junit.Before
 import org.junit.Test
-import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import java.io.File
+import org.robolectric.RuntimeEnvironment
 
 @RunWith(RobolectricTestRunner::class)
 class ParsedRepositoryTest {
 
-    @get:Rule
-    val tmp = TemporaryFolder()
+    private lateinit var db: MiHealthDatabase
+    private lateinit var store: LocalStore
+    private lateinit var repo: ParsedRepository
 
-    private fun writeSnapshot(name: String, json: String) {
-        val dir = File(tmp.root, name)
-        File(dir, "parsed").mkdirs()
-        File(dir, "parsed/normalized.json").writeText(json)
+    @Before
+    fun setUp() {
+        db = Room.inMemoryDatabaseBuilder(RuntimeEnvironment.getApplication(), MiHealthDatabase::class.java)
+            .allowMainThreadQueries()
+            .build()
+        store = LocalStore(db)
+        repo = ParsedRepository(store)
     }
 
-    private val sample = """
-        {"schema_version":"1.0","source":"mihealthreader","generated_at":"t","records":{
-          "sleep":[{"start":200,"end":300,"duration_min":1,"deep_min":0,"light_min":1,"avg_hr":60,"min_hr":55,"max_hr":65,
-            "stages":[{"start":200,"end":300,"state":2,"state_name":"light"}]},
-            {"start":100,"end":160,"duration_min":1,"deep_min":1,"light_min":0,"avg_hr":50,"min_hr":45,"max_hr":70,
-            "stages":[]}],
-          "daily_activity":[{"date":"2026-04-02","steps":100,"distance_m":80,"active_kcal":5},
-            {"date":"2026-05-01","steps":200,"distance_m":150,"active_kcal":9}]}}
-    """.trimIndent()
+    @After
+    fun tearDown() = db.close()
 
     @Test
-    fun `reads daily activity newest first`() {
-        writeSnapshot("2026-05-01T00-00-00", sample)
-        val activity = ParsedRepository(tmp.root).dailyActivity()
+    fun `aggregates step samples into newest-first daily activity`() = runTest {
+        store.save(
+            sleep = emptyList(),
+            samples = listOf(
+                StepSample("dev", 0, 0, 10, 5, 1),
+                StepSample("dev", 86400, 0, 20, 12, 2),
+            ),
+            sourcePackage = "com.mi.health",
+            at = 1,
+        )
+        val activity = repo.dailyActivity().first()
         assertEquals(2, activity.size)
-        assertEquals("2026-05-01", activity.first().date)
-        assertEquals(200, activity.first().steps)
+        assertEquals("1970-01-02", activity.first().date)
+        assertEquals(20, activity.first().steps)
     }
 
     @Test
-    fun `reads sleep sessions newest first with stages`() {
-        writeSnapshot("2026-05-01T00-00-00", sample)
-        val sleep = ParsedRepository(tmp.root).sleepSessions()
-        assertEquals(2, sleep.size)
-        assertEquals(200L, sleep.first().start)
-        assertEquals("light", sleep.first().stages.single().stateName)
+    fun `returns saved sleep sessions`() = runTest {
+        store.save(
+            sleep = listOf(SleepSession(100, 200, 2, 1, 1, 60, 50, 70, listOf(SleepStage(100, 160, 3, "light")))),
+            samples = emptyList(),
+            sourcePackage = "com.mi.health",
+            at = 1,
+        )
+        val sleep = repo.sleepSessions().first().single()
+        assertEquals(1, sleep.stages.size)
+        assertEquals("light", sleep.stages.single().stateName)
     }
 
     @Test
-    fun `empty when no normalized file`() {
-        val repo = ParsedRepository(tmp.root)
-        assertEquals(0, repo.dailyActivity().size)
-        assertEquals(0, repo.sleepSessions().size)
+    fun `empty store yields empty lists`() = runTest {
+        assertEquals(0, repo.dailyActivity().first().size)
+        assertEquals(0, repo.sleepSessions().first().size)
     }
 }

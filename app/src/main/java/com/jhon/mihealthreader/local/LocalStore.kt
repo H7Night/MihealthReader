@@ -3,6 +3,9 @@ package com.jhon.mihealthreader.local
 import com.jhon.mihealthreader.parse.SleepSession
 import com.jhon.mihealthreader.parse.SleepStage
 import com.jhon.mihealthreader.parse.StepSample
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 
 data class SaveResult(
     val newSamples: Int,
@@ -90,4 +93,29 @@ class LocalStore(private val db: MiHealthDatabase) {
             sleepSessions = db.sleepDao().sessionCount(),
         )
     }
+
+    fun stepSamplesFlow(): Flow<List<StepSample>> =
+        db.stepSampleDao().allFlow().map { entities ->
+            entities.map { StepSample(it.sourceId, it.time, it.zoneOffsetSec, it.steps, it.distanceMeters, it.calories) }
+        }
+
+    fun sleepSessionsFlow(): Flow<List<SleepSession>> =
+        combine(db.sleepDao().sessionsFlow(), db.sleepDao().stagesFlow()) { sessions, stages ->
+            val stagesBySession = stages.groupBy { it.sessionStart }
+            sessions.map { session ->
+                SleepSession(
+                    start = session.start,
+                    end = session.end,
+                    durationMinutes = session.durationMinutes,
+                    deepMinutes = session.deepMinutes,
+                    lightMinutes = session.lightMinutes,
+                    avgHr = session.avgHr,
+                    minHr = session.minHr,
+                    maxHr = session.maxHr,
+                    stages = stagesBySession[session.start].orEmpty().map {
+                        SleepStage(it.start, it.end, it.state, it.stateName)
+                    },
+                )
+            }
+        }
 }

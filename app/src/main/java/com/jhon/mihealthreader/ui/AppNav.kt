@@ -30,9 +30,11 @@ fun AppNav(
         composable("extract") {
             val state by extractionViewModel.state.collectAsState()
             val rootGranted by extractionViewModel.rootGranted.collectAsState()
+            val summary by extractionViewModel.summary.collectAsState()
             ExtractionScreen(
                 state = state,
                 rootGranted = rootGranted,
+                summary = summary,
                 onStart = { extractionViewModel.start() },
                 onBrowse = { navController.navigate("browse") },
                 onActivity = { navController.navigate("activity") },
@@ -41,15 +43,17 @@ fun AppNav(
         }
 
         composable("activity") {
+            val activity by parsedRepository.dailyActivity().collectAsState(initial = emptyList())
             ActivityScreen(
-                activity = parsedRepository.dailyActivity(),
+                activity = activity,
                 onBack = { navController.popBackStack() },
             )
         }
 
         composable("sleep") {
+            val sessions by parsedRepository.sleepSessions().collectAsState(initial = emptyList())
             SleepScreen(
-                sessions = parsedRepository.sleepSessions(),
+                sessions = sessions,
                 onBack = { navController.popBackStack() },
             )
         }
