@@ -14,6 +14,7 @@ import com.jhon.mihealthreader.data.ParsedRepository
 import com.jhon.mihealthreader.data.TableEntry
 import com.jhon.mihealthreader.ui.screens.ActivityScreen
 import com.jhon.mihealthreader.ui.screens.ExtractionScreen
+import com.jhon.mihealthreader.ui.screens.SleepScreen
 import com.jhon.mihealthreader.ui.screens.TableDetailScreen
 import com.jhon.mihealthreader.ui.screens.TableListScreen
 
@@ -35,12 +36,20 @@ fun AppNav(
                 onStart = { extractionViewModel.start() },
                 onBrowse = { navController.navigate("browse") },
                 onActivity = { navController.navigate("activity") },
+                onSleep = { navController.navigate("sleep") },
             )
         }
 
         composable("activity") {
             ActivityScreen(
                 activity = parsedRepository.dailyActivity(),
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable("sleep") {
+            SleepScreen(
+                sessions = parsedRepository.sleepSessions(),
                 onBack = { navController.popBackStack() },
             )
         }
