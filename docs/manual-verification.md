@@ -104,3 +104,13 @@ adb exec-out run-as com.jhon.mihealthreader tar -c files/exports | tar -x
 - 真机（`shizuku_server` 以 root 运行）：Shizuku 授权后 **提取成功**（112 表，新增 9536 条），再提取"无新数据"；root 后端同样正常。
 - `isGranted()` 要求实际 uid=0，可识别"Shizuku 非 root 启动"。
 - 67 个单元测试全绿，`lintDebug`/`assembleDebug` 通过。
+
+## 11. UI 重构实际结果（2026-10-09，通过）
+
+- 底部 NavigationBar：**今天 / 视图 / 设置**；进入"浏览原始表"时底部栏隐藏。
+- **今天**：卡片式概览（步数/睡眠/心率/运动/血氧/体重），空库时提示"去设置提取"。
+- **视图**：指标 Chips（步数/睡眠/心率/血氧/运动/体重）+ **自绘 Canvas 图表**（柱状/堆叠柱状/折线），按日聚合近 30 天。
+- **设置**：数据源（Root/Shizuku）、提取数据、**导出规范化 JSON（SAF）**、高级（调试浏览器）、关于。
+- 真机导出：`导出数据（JSON）` → 系统保存对话框 → `/sdcard/Download/mihealth-normalized.json`（2.09MB），提示"已导出到所选位置"。
+- 旧列表视图（活动/睡眠/心率/血氧/运动/体重）已移除，改由图表呈现。
+- 75 个单元测试全绿，`lintDebug`/`assembleDebug` 通过。
