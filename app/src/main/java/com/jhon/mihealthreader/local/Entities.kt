@@ -41,3 +41,41 @@ data class SyncStateEntity(
     val sourcePackage: String,
     val lastNewCount: Int,
 )
+
+@Entity(tableName = "metric_sample", primaryKeys = ["metricType", "sourceId", "time"])
+data class MetricSampleEntity(
+    val metricType: String,
+    val sourceId: String,
+    val time: Long,
+    val value: Double,
+)
+
+@Entity(tableName = "workout", primaryKeys = ["sourceId", "start"])
+data class WorkoutEntity(
+    val sourceId: String,
+    val start: Long,
+    val end: Long,
+    val durationSec: Int,
+    val calories: Int,
+    val avgHr: Int?,
+    val maxHr: Int?,
+    val minHr: Int?,
+    val distanceMeters: Int?,
+    val type: String,
+    val typeName: String,
+)
+
+@Entity(tableName = "body_measurement", primaryKeys = ["sourceId", "time"])
+data class BodyMeasurementEntity(
+    val sourceId: String,
+    val time: Long,
+    val weightKg: Double?,
+    val bmi: Double?,
+    val bodyFatRate: Double?,
+    val muscleKg: Double?,
+    val waterPct: Double?,
+    val boneKg: Double?,
+    val bmrKcal: Double?,
+    val visceralFat: Double?,
+    val proteinRate: Double?,
+)

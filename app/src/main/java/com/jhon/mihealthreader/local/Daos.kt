@@ -53,3 +53,48 @@ interface SyncStateDao {
     @Query("SELECT * FROM sync_state WHERE id = 1")
     fun get(): SyncStateEntity?
 }
+
+@Dao
+interface MetricDao {
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    fun insertIgnore(items: List<MetricSampleEntity>): List<Long>
+
+    @Query("SELECT * FROM metric_sample WHERE metricType = :type ORDER BY time DESC")
+    fun byType(type: String): List<MetricSampleEntity>
+
+    @Query("SELECT * FROM metric_sample WHERE metricType = :type ORDER BY time DESC")
+    fun byTypeFlow(type: String): Flow<List<MetricSampleEntity>>
+
+    @Query("SELECT COUNT(*) FROM metric_sample WHERE metricType = :type")
+    fun countByType(type: String): Int
+}
+
+@Dao
+interface WorkoutDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun upsert(items: List<WorkoutEntity>): List<Long>
+
+    @Query("SELECT * FROM workout ORDER BY start DESC")
+    fun all(): List<WorkoutEntity>
+
+    @Query("SELECT * FROM workout ORDER BY start DESC")
+    fun allFlow(): Flow<List<WorkoutEntity>>
+
+    @Query("SELECT COUNT(*) FROM workout")
+    fun count(): Int
+}
+
+@Dao
+interface BodyMeasurementDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun upsert(items: List<BodyMeasurementEntity>): List<Long>
+
+    @Query("SELECT * FROM body_measurement ORDER BY time DESC")
+    fun all(): List<BodyMeasurementEntity>
+
+    @Query("SELECT * FROM body_measurement ORDER BY time DESC")
+    fun allFlow(): Flow<List<BodyMeasurementEntity>>
+
+    @Query("SELECT COUNT(*) FROM body_measurement")
+    fun count(): Int
+}

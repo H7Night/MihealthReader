@@ -55,4 +55,32 @@ class LocalDaoTest {
         assertEquals(222L, db.syncStateDao().get()!!.lastExtractedAt)
         assertEquals(0, db.syncStateDao().get()!!.lastNewCount)
     }
+
+    @Test
+    fun `metric sample ignore is idempotent and filters by type`() {
+        val batch = listOf(MetricSampleEntity("heart_rate", "dev", 100, 72.0))
+        assertEquals(1, db.metricDao().insertIgnore(batch).count { it != -1L })
+        assertEquals(0, db.metricDao().insertIgnore(batch).count { it != -1L })
+        db.metricDao().insertIgnore(listOf(MetricSampleEntity("spo2", "dev", 200, 98.0)))
+        assertEquals(1, db.metricDao().countByType("heart_rate"))
+        assertEquals(1, db.metricDao().byType("spo2").size)
+    }
+
+    @Test
+    fun `workout replace updates same start`() {
+        db.workoutDao().upsert(listOf(WorkoutEntity("dev", 100, 200, 100, 10, 120, 150, 90, null, "indoor_running", "室内跑步")))
+        db.workoutDao().upsert(listOf(WorkoutEntity("dev", 100, 300, 200, 20, 130, 160, 95, 5000, "indoor_running", "室内跑步")))
+        val workout = db.workoutDao().all().single()
+        assertEquals(300L, workout.end)
+        assertEquals(5000, workout.distanceMeters)
+    }
+
+    @Test
+    fun `body measurement replace updates same time`() {
+        db.bodyMeasurementDao().upsert(listOf(BodyMeasurementEntity("dev", 100, 60.0, null, null, null, null, null, null, null, null)))
+        db.bodyMeasurementDao().upsert(listOf(BodyMeasurementEntity("dev", 100, 61.0, 22.0, null, null, null, null, null, null, null)))
+        val body = db.bodyMeasurementDao().all().single()
+        assertEquals(61.0, body.weightKg!!, 0.0)
+        assertEquals(22.0, body.bmi!!, 0.0)
+    }
 }
