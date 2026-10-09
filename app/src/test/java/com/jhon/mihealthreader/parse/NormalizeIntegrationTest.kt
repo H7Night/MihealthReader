@@ -29,6 +29,12 @@ class NormalizeIntegrationTest {
         db.execSQL("INSERT INTO step_record VALUES ('{\"time\":0,\"steps\":10,\"distance\":5,\"calories\":1}',0,0)")
         db.execSQL("INSERT INTO step_record VALUES ('{\"time\":0,\"steps\":30,\"distance\":20,\"calories\":2}',0,0)")
         db.execSQL("INSERT INTO step_record VALUES ('{\"time\":999,\"steps\":50,\"distance\":50,\"calories\":5}',0,1)")
+        db.execSQL("CREATE TABLE hr_record(value TEXT, key TEXT, sid TEXT, isDeleted INTEGER, time INTEGER)")
+        db.execSQL("INSERT INTO hr_record VALUES ('{\"bpm\":72}','heart_rate','dev',0,100)")
+        db.execSQL("CREATE TABLE sport_report(value TEXT, key TEXT, sid TEXT, time INTEGER, isDeleted INTEGER)")
+        db.execSQL("INSERT INTO sport_report VALUES ('{\"start_time\":100,\"end_time\":400,\"duration\":300,\"calories\":295,\"avg_hrm\":112}','indoor_running','dev',100,0)")
+        db.execSQL("CREATE TABLE weight_item_record(time INTEGER, sid TEXT, value TEXT, isDeleted INTEGER)")
+        db.execSQL("INSERT INTO weight_item_record VALUES (100,'dev','{\"weight\":60.0}',0)")
         db.close()
         return tmp.root
     }
@@ -41,10 +47,16 @@ class NormalizeIntegrationTest {
         assertEquals(1, result.sleep.size)
         assertEquals(1, result.activity.size)
         assertEquals(2, result.samples.size)
+        assertEquals(1, result.metricSamples.size)
+        assertEquals(1, result.workouts.size)
+        assertEquals(1, result.bodyMeasurements.size)
         assertTrue(result.outputFile.isFile)
 
         val records = JSONObject(result.outputFile.readText()).getJSONObject("records")
         assertEquals(1, records.getJSONArray("sleep").length())
+        assertEquals(1, records.getJSONArray("heart_rate").length())
+        assertEquals(1, records.getJSONArray("workouts").length())
+        assertEquals(1, records.getJSONArray("body_measurements").length())
         // deleted row ignored; same-minute dedup keeps larger (30)
         assertEquals(30, records.getJSONArray("daily_activity").getJSONObject(0).getInt("steps"))
     }
