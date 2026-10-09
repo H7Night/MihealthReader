@@ -8,6 +8,7 @@ import com.jhon.mihealthreader.dump.Dumper
 import com.jhon.mihealthreader.dump.ManifestData
 import com.jhon.mihealthreader.dump.ManifestWriter
 import com.jhon.mihealthreader.extract.Extractor
+import com.jhon.mihealthreader.parse.Normalizer
 import com.jhon.mihealthreader.root.RootShell
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -28,6 +29,7 @@ class ExtractionViewModel(
     private val androidVersion: Int,
     private val appVersion: String,
     private val exportsDir: File,
+    private val normalizer: Normalizer = Normalizer(),
     private val io: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
 
@@ -87,7 +89,15 @@ class ExtractionViewModel(
                     File(snapshot.root, "manifest.json"),
                 )
 
-                _state.value = ExtractionState.Success(snapshot.root, results.sumOf { it.tables.size })
+                _state.value = ExtractionState.Running("解析睡眠与步数")
+                val normalized = normalizer.normalize(snapshot.root)
+
+                _state.value = ExtractionState.Success(
+                    snapshot = snapshot.root,
+                    tableCount = results.sumOf { it.tables.size },
+                    sleepSessions = normalized.sleepSessions,
+                    activityDays = normalized.activityDays,
+                )
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Throwable) {

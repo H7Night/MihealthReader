@@ -1,8 +1,44 @@
 package com.jhon.mihealthreader.parse
 
+import android.database.sqlite.SQLiteDatabase
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
+import java.time.Instant
+
+class Normalizer {
+
+    fun normalize(snapshotRoot: File, generatedAt: String = Instant.now().toString()): NormalizeResult {
+        val fitnessData = findFitnessData(snapshotRoot)
+
+        var sleep: List<SleepSession> = emptyList()
+        var activity: List<DailyActivity> = emptyList()
+
+        if (fitnessData != null) {
+            val db = SQLiteDatabase.openDatabase(
+                fitnessData.absolutePath,
+                null,
+                SQLiteDatabase.OPEN_READONLY,
+            )
+            try {
+                sleep = runCatching { SleepParser.parse(db) }.getOrDefault(emptyList())
+                activity = runCatching {
+                    ActivityParser.aggregate(ActivityParser.parseSamples(db))
+                }.getOrDefault(emptyList())
+            } finally {
+                db.close()
+            }
+        }
+
+        val dest = File(snapshotRoot, "parsed/normalized.json")
+        writeNormalizedEnvelope(sleep, activity, skipped = 0, dest = dest, generatedAt = generatedAt)
+        return NormalizeResult(sleep.size, activity.size, skipped = 0, outputFile = dest)
+    }
+
+    private fun findFitnessData(snapshotRoot: File): File? =
+        File(snapshotRoot, "raw").walkTopDown()
+            .firstOrNull { it.isFile && it.name == "fitness_data" }
+}
 
 fun writeNormalizedEnvelope(
     sleep: List<SleepSession>,
