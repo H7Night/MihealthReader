@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.dp
 import com.jhon.mihealthreader.data.ParsedRepository
 import com.jhon.mihealthreader.data.SleepSummary
 import com.jhon.mihealthreader.parse.SleepSession
-import com.jhon.mihealthreader.ui.charts.DottedLine
+import com.jhon.mihealthreader.ui.charts.DottedChartWithAxes
 import com.jhon.mihealthreader.ui.charts.HypnoSegment
 import com.jhon.mihealthreader.ui.charts.Hypnogram
 import java.time.Instant
@@ -162,7 +162,15 @@ fun SleepDetailScreen(
                         recent.reversed().map { SleepSummary.bedtimeMinutes(it).toFloat() }
                     }
                     if (values.size >= 2) {
-                        DottedLine(values, Modifier.fillMaxWidth().height(48.dp), MaterialTheme.colorScheme.primary)
+                        DottedChartWithAxes(
+                            values = values,
+                            labels = remember(recent) {
+                                recent.reversed().map { formatNight(it.start).substringAfter('-') }
+                            },
+                            yTop = SleepSummary.formatBedtime(values.max().toInt()),
+                            yBottom = SleepSummary.formatBedtime(values.min().toInt()),
+                            color = MaterialTheme.colorScheme.primary,
+                        )
                     }
                     Text("近 ${regularity.nights} 晚", style = MaterialTheme.typography.labelSmall)
                 }

@@ -12,6 +12,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 private val AXIS_WIDTH = 44.dp
@@ -67,6 +68,32 @@ fun StackedChartWithAxes(
                 Text("0", style = MaterialTheme.typography.labelSmall)
             }
             StackedBarChart(rows, Modifier.fillMaxWidth().height(CHART_HEIGHT))
+        }
+        AxisLabels(labels)
+    }
+}
+
+/** Dotted line chart with custom y-axis labels (top/bottom) and x-axis labels. */
+@Composable
+fun DottedChartWithAxes(
+    values: List<Float>,
+    labels: List<String>,
+    yTop: String,
+    yBottom: String,
+    modifier: Modifier = Modifier,
+    color: Color,
+    height: Dp = 100.dp,
+) {
+    Column(modifier = modifier) {
+        Row(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier.width(AXIS_WIDTH).height(height),
+                verticalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(yTop, style = MaterialTheme.typography.labelSmall)
+                Text(yBottom, style = MaterialTheme.typography.labelSmall)
+            }
+            DottedLine(values, Modifier.fillMaxWidth().height(height), color)
         }
         AxisLabels(labels)
     }
