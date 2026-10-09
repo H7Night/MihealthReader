@@ -13,12 +13,16 @@ class TargetLocatorTest {
 
     private fun shellReturning(dirExistsFor: Set<String>) = object : RootShell {
         override fun run(vararg commands: String): ShellOutput {
-            val path = commands.last()
+            val path = commands[1]
             val pkg = path.removePrefix("/data/data/").removeSuffix("/databases")
             return if (pkg in dirExistsFor) {
-                ShellOutput(0, listOf("mi.db", "mi.db-wal"), emptyList())
+                ShellOutput(
+                    0,
+                    listOf("$path/fitness_sync", "$path/2476836171/cn/fitness_data"),
+                    emptyList(),
+                )
             } else {
-                ShellOutput(1, emptyList(), listOf("No such file or directory"))
+                ShellOutput(1, emptyList(), listOf("find: No such file or directory"))
             }
         }
     }
@@ -28,7 +32,10 @@ class TargetLocatorTest {
         val locator = TargetLocator(shellReturning(setOf("com.xiaomi.wearable")), { emptyList() })
         val result = locator.findCandidates()
         assertEquals(listOf("com.xiaomi.wearable"), result.map { it.packageName })
-        assertEquals(listOf("mi.db", "mi.db-wal"), result.first().dbFiles)
+        assertEquals(
+            listOf("fitness_sync", "2476836171/cn/fitness_data"),
+            result.first().dbFiles,
+        )
         assertEquals("/data/data/com.xiaomi.wearable/databases", result.first().databasesPath)
     }
 

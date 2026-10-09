@@ -27,9 +27,12 @@ class TargetLocator(
 
         return candidates.mapNotNull { pkg ->
             val path = "/data/data/$pkg/databases"
-            val output = rootShell.run("ls", "-1", path)
+            val output = rootShell.run("find", path, "-type", "f")
             if (output.exitCode == 0 && output.stdout.isNotEmpty()) {
-                TargetApp(pkg, path, output.stdout)
+                val relativeFiles = output.stdout
+                    .filter { it.startsWith("$path/") }
+                    .map { it.removePrefix("$path/") }
+                if (relativeFiles.isEmpty()) null else TargetApp(pkg, path, relativeFiles)
             } else {
                 null
             }

@@ -67,9 +67,13 @@ class ExtractionViewModel(
                 val snapshot = extractor.extract(target, exportsDir)
 
                 _state.value = ExtractionState.Running("导出 JSON")
-                val dbFiles = snapshot.files.filter { it.isFile && it.name.endsWith(".db") }
+                val sidecarSuffixes = listOf("-wal", "-shm", "-journal")
+                val dbFiles = snapshot.files.filter { file ->
+                    file.isFile && sidecarSuffixes.none { file.name.endsWith(it) }
+                }
                 val results = dbFiles.map { db ->
-                    dumper.dump(db, File(snapshot.root, "json/${db.name}"))
+                    val relative = db.relativeToOrNull(snapshot.directory)?.path ?: db.name
+                    dumper.dump(db, File(snapshot.root, "json/$relative"))
                 }
 
                 manifestWriter.write(

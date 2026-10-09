@@ -46,4 +46,20 @@ class DbExtractorTest {
             DbExtractor(reader) { "T1" }.extract(target, tmp.root)
         }
     }
+
+    @Test
+    fun `recreates nested relative paths`() {
+        val reader = SourceReader { ByteArrayInputStream("D".toByteArray()) }
+        val target = TargetApp(
+            "com.mi.health",
+            "/data/data/com.mi.health/databases",
+            listOf("2476836171/cn/fitness_data"),
+        )
+
+        val snapshot = DbExtractor(reader) { "T1" }.extract(target, tmp.root)
+
+        val dest = snapshot.files.single()
+        assertEquals("D", dest.readText())
+        assertTrue(dest.endsWith(File("raw/com.mi.health/databases/2476836171/cn/fitness_data")))
+    }
 }
