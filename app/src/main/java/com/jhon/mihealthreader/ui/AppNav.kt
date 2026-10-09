@@ -33,6 +33,7 @@ import com.jhon.mihealthreader.ui.nav.showsBottomBar
 import com.jhon.mihealthreader.ui.screens.ChartsScreen
 import com.jhon.mihealthreader.ui.screens.MetricDetailScreen
 import com.jhon.mihealthreader.ui.screens.SettingsScreen
+import com.jhon.mihealthreader.ui.screens.SleepDetailScreen
 import com.jhon.mihealthreader.ui.screens.TodayScreen
 import java.io.File
 
@@ -86,13 +87,29 @@ fun AppNav(
                 TodayScreen(
                     parsedRepository = parsedRepository,
                     summary = summary,
-                    onOpenDetail = { navController.navigate("detail/${it.name}") },
+                    onOpenDetail = { metric ->
+                        if (metric == Metric.SLEEP) {
+                            navController.navigate("sleep_detail")
+                        } else {
+                            navController.navigate("detail/${metric.name}")
+                        }
+                    },
                     onGoSettings = { navController.navigateSingleTop(Routes.SETTINGS) },
                 )
             }
 
             composable(Routes.CHARTS) {
-                ChartsScreen(parsedRepository = parsedRepository)
+                ChartsScreen(
+                    parsedRepository = parsedRepository,
+                    onOpenSleepDetail = { navController.navigate("sleep_detail") },
+                )
+            }
+
+            composable("sleep_detail") {
+                SleepDetailScreen(
+                    parsedRepository = parsedRepository,
+                    onBack = { navController.popBackStack() },
+                )
             }
 
             composable("detail/{metric}") { entry ->

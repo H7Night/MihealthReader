@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -28,7 +29,10 @@ import com.jhon.mihealthreader.ui.Metric
 import java.time.YearMonth
 
 @Composable
-fun ChartsScreen(parsedRepository: ParsedRepository) {
+fun ChartsScreen(
+    parsedRepository: ParsedRepository,
+    onOpenSleepDetail: () -> Unit,
+) {
     var metric by remember { mutableStateOf(Metric.STEPS) }
     var yearMonth by remember { mutableStateOf(YearMonth.now()) }
 
@@ -65,6 +69,13 @@ fun ChartsScreen(parsedRepository: ParsedRepository) {
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
+        }
+
+        if (metric == Metric.SLEEP) {
+            Button(
+                onClick = onOpenSleepDetail,
+                modifier = Modifier.padding(top = 12.dp),
+            ) { Text("查看每晚睡眠详情") }
         }
     }
 }
