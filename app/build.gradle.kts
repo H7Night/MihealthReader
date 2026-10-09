@@ -58,6 +58,7 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.libsu.core)
+    implementation(libs.libsu.io)
 
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
