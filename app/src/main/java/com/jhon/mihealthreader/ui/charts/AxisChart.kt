@@ -39,9 +39,9 @@ fun ChartWithAxes(
                 Text(formatAxis(minV), style = MaterialTheme.typography.labelSmall)
             }
             if (bars) {
-                BarChart(values, Modifier.fillMaxWidth().height(CHART_HEIGHT), color)
+                RoundedBarChart(values, Modifier.fillMaxWidth().height(CHART_HEIGHT), color)
             } else {
-                LineChart(values, Modifier.fillMaxWidth().height(CHART_HEIGHT), color)
+                AreaLineChart(values, Modifier.fillMaxWidth().height(CHART_HEIGHT), color)
             }
         }
         AxisLabels(labels)
