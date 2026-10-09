@@ -37,9 +37,10 @@ data class DailyActivity(
     val calories: Int,
 )
 
-data class NormalizeResult(
-    val sleepSessions: Int,
-    val activityDays: Int,
+data class ParsedData(
+    val sleep: List<SleepSession>,
+    val samples: List<StepSample>,
+    val activity: List<DailyActivity>,
     val skipped: Int,
     val outputFile: File,
 )

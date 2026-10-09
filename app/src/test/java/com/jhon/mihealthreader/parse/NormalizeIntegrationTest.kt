@@ -38,8 +38,9 @@ class NormalizeIntegrationTest {
         val root = fixtureSnapshot()
         val result = Normalizer().normalize(root, generatedAt = "2026-01-01T00:00:00Z")
 
-        assertEquals(1, result.sleepSessions)
-        assertEquals(1, result.activityDays)
+        assertEquals(1, result.sleep.size)
+        assertEquals(1, result.activity.size)
+        assertEquals(2, result.samples.size)
         assertTrue(result.outputFile.isFile)
 
         val records = JSONObject(result.outputFile.readText()).getJSONObject("records")
@@ -63,8 +64,8 @@ class NormalizeIntegrationTest {
     fun `writes empty envelope when fitness_data missing`() {
         val root = tmp.root
         val result = Normalizer().normalize(root, generatedAt = "2026-01-01T00:00:00Z")
-        assertEquals(0, result.sleepSessions)
-        assertEquals(0, result.activityDays)
+        assertEquals(0, result.sleep.size)
+        assertEquals(0, result.activity.size)
         assertTrue(result.outputFile.isFile)
     }
 }

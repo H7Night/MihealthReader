@@ -8,19 +8,19 @@ import java.time.Instant
 
 class Normalizer {
 
-    fun normalize(snapshotRoot: File, generatedAt: String = Instant.now().toString()): NormalizeResult {
+    fun normalize(snapshotRoot: File, generatedAt: String = Instant.now().toString()): ParsedData {
         val fitnessData = findFitnessData(snapshotRoot)
 
         var sleep: List<SleepSession> = emptyList()
+        var samples: List<StepSample> = emptyList()
         var activity: List<DailyActivity> = emptyList()
 
         if (fitnessData != null) {
             val db = SqliteSupport.openReadOnly(fitnessData)
             try {
                 sleep = runCatching { SleepParser.parse(db) }.getOrDefault(emptyList())
-                activity = runCatching {
-                    ActivityParser.aggregate(ActivityParser.parseSamples(db))
-                }.getOrDefault(emptyList())
+                samples = runCatching { ActivityParser.parseSamples(db) }.getOrDefault(emptyList())
+                activity = runCatching { ActivityParser.aggregate(samples) }.getOrDefault(emptyList())
             } finally {
                 db.close()
                 SqliteSupport.removeStaleShm(fitnessData)
@@ -29,7 +29,7 @@ class Normalizer {
 
         val dest = File(snapshotRoot, "parsed/normalized.json")
         writeNormalizedEnvelope(sleep, activity, skipped = 0, dest = dest, generatedAt = generatedAt)
-        return NormalizeResult(sleep.size, activity.size, skipped = 0, outputFile = dest)
+        return ParsedData(sleep, samples, activity, skipped = 0, outputFile = dest)
     }
 
     private fun findFitnessData(snapshotRoot: File): File? =

@@ -95,8 +95,8 @@ class ExtractionViewModel(
                 _state.value = ExtractionState.Success(
                     snapshot = snapshot.root,
                     tableCount = results.sumOf { it.tables.size },
-                    sleepSessions = normalized.sleepSessions,
-                    activityDays = normalized.activityDays,
+                    sleepSessions = normalized.sleep.size,
+                    activityDays = normalized.activity.size,
                 )
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
