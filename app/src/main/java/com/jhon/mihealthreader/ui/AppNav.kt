@@ -22,6 +22,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.jhon.mihealthreader.data.ExportManager
 import com.jhon.mihealthreader.data.ExportRepository
 import com.jhon.mihealthreader.data.ParsedRepository
 import com.jhon.mihealthreader.data.TableEntry
@@ -34,12 +35,14 @@ import com.jhon.mihealthreader.ui.screens.SettingsScreen
 import com.jhon.mihealthreader.ui.screens.TableDetailScreen
 import com.jhon.mihealthreader.ui.screens.TableListScreen
 import com.jhon.mihealthreader.ui.screens.TodayScreen
+import java.io.File
 
 @Composable
 fun AppNav(
     extractionViewModel: ExtractionViewModel,
     repository: ExportRepository,
     parsedRepository: ParsedRepository,
+    exportsDir: File,
 ) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -94,6 +97,7 @@ fun AppNav(
                 val summary by extractionViewModel.summary.collectAsState()
                 val context = LocalContext.current
                 val backendPrefs = remember { BackendPreferences(context) }
+                val exportManager = remember { ExportManager(exportsDir) }
                 var backend by remember { mutableStateOf(backendPrefs.get()) }
                 var shizukuGranted by remember { mutableStateOf(ShizukuPermission.isGranted()) }
                 SettingsScreen(
@@ -102,6 +106,7 @@ fun AppNav(
                     summary = summary,
                     backend = backend,
                     shizukuGranted = shizukuGranted,
+                    exportManager = exportManager,
                     onSelectBackend = {
                         backendPrefs.set(it)
                         backend = it

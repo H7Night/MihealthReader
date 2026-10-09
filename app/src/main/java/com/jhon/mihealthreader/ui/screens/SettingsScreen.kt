@@ -1,5 +1,7 @@
 package com.jhon.mihealthreader.ui.screens
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,8 +14,14 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.jhon.mihealthreader.data.ExportManager
 import com.jhon.mihealthreader.local.BackendType
 import com.jhon.mihealthreader.local.LocalSummary
 import com.jhon.mihealthreader.ui.ExtractionState
@@ -28,11 +36,32 @@ fun SettingsScreen(
     summary: LocalSummary,
     backend: BackendType,
     shizukuGranted: Boolean,
+    exportManager: ExportManager,
     onSelectBackend: (BackendType) -> Unit,
     onRequestShizuku: () -> Unit,
     onStart: () -> Unit,
     onBrowse: () -> Unit,
 ) {
+    val context = LocalContext.current
+    var exportMessage by remember { mutableStateOf<String?>(null) }
+    val exportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json"),
+    ) { uri ->
+        if (uri != null) {
+            val file = exportManager.latestNormalized()
+            if (file == null) {
+                exportMessage = "请先提取数据"
+            } else {
+                val ok = runCatching {
+                    context.contentResolver.openOutputStream(uri)?.use { out ->
+                        file.inputStream().use { it.copyTo(out) }
+                    }
+                }.isSuccess
+                exportMessage = if (ok) "已导出到所选位置" else "导出失败"
+            }
+        }
+    }
+
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -79,6 +108,19 @@ fun SettingsScreen(
                 Button(onClick = onStart) { Text("重试") }
             }
         }
+
+        HorizontalDivider()
+
+        Text("数据导出", style = MaterialTheme.typography.titleMedium)
+        Text("导出规范化 JSON（normalized.json）", style = MaterialTheme.typography.bodySmall)
+        Button(onClick = {
+            if (exportManager.latestNormalized() == null) {
+                exportMessage = "请先提取数据"
+            } else {
+                exportLauncher.launch(exportManager.defaultExportName())
+            }
+        }) { Text("导出数据（JSON）") }
+        exportMessage?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
 
         HorizontalDivider()
 

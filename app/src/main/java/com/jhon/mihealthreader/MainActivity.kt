@@ -47,7 +47,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             MaterialTheme {
-                AppNav(extractionViewModel, repository, parsedRepository)
+                AppNav(extractionViewModel, repository, parsedRepository, exportsDir)
             }
         }
     }
