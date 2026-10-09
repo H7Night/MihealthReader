@@ -95,3 +95,12 @@ adb exec-out run-as com.jhon.mihealthreader tar -c files/exports | tar -x
 - 各指标界面（心率/血氧/运动/体重）均正常渲染；首页导航新增对应入口。
 - **增量幂等**：连续两次提取（无新同步）第二次显示"无新数据"，计数不变；期间 App 有新同步时正确报告"新增 N 条"。
 - 66 个单元测试全绿，`lintDebug`/`assembleDebug` 通过。
+
+## 10. Shizuku 数据层实际结果（2026-10-09，通过）
+
+- 特权通道抽象为 `PrivilegedShell`（`run`/`openFile`/`isGranted`），实现 `LibsuRootShell` 与 `ShizukuShell`。
+- Shizuku 通过 **UserService（AIDL）** 在 Shizuku 进程执行命令与 `openFile`（`ParcelFileDescriptor`，避免大文件 binder 限制）。
+- 数据源可在首页临时切换 root/Shizuku（正式设置页后续做）；切换后重启 App 生效。
+- 真机（`shizuku_server` 以 root 运行）：Shizuku 授权后 **提取成功**（112 表，新增 9536 条），再提取"无新数据"；root 后端同样正常。
+- `isGranted()` 要求实际 uid=0，可识别"Shizuku 非 root 启动"。
+- 67 个单元测试全绿，`lintDebug`/`assembleDebug` 通过。
