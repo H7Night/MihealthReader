@@ -4,7 +4,6 @@ import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.material3.MaterialTheme
 import com.jhon.mihealthreader.data.ExportRepository
 import com.jhon.mihealthreader.data.ParsedRepository
 import com.jhon.mihealthreader.discover.PackageScanner
@@ -18,6 +17,7 @@ import com.jhon.mihealthreader.local.MiHealthDatabase
 import com.jhon.mihealthreader.root.BackendManager
 import com.jhon.mihealthreader.ui.AppNav
 import com.jhon.mihealthreader.ui.ExtractionViewModel
+import com.jhon.mihealthreader.ui.theme.MiHealthTheme
 import java.io.File
 
 class MainActivity : ComponentActivity() {
@@ -46,7 +46,7 @@ class MainActivity : ComponentActivity() {
         )
 
         setContent {
-            MaterialTheme {
+            MiHealthTheme {
                 AppNav(extractionViewModel, repository, parsedRepository, exportsDir)
             }
         }
