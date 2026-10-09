@@ -99,18 +99,13 @@ class ExtractionViewModel(
                 _state.value = ExtractionState.Running("解析睡眠与步数")
                 val parsed = normalizer.normalize(snapshot.root)
 
-                val saved = localStore.save(
-                    sleep = parsed.sleep,
-                    samples = parsed.samples,
-                    sourcePackage = snapshot.sourcePackage,
-                    at = System.currentTimeMillis(),
-                )
+                val saved = localStore.save(parsed, snapshot.sourcePackage, System.currentTimeMillis())
                 _summary.value = localStore.summary()
 
                 _state.value = ExtractionState.Success(
                     snapshot = snapshot.root,
                     tableCount = results.sumOf { it.tables.size },
-                    newRecords = saved.newSamples + saved.newStages,
+                    newRecords = saved.newRecords,
                 )
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e

@@ -80,6 +80,9 @@ interface WorkoutDao {
     @Query("SELECT * FROM workout ORDER BY start DESC")
     fun allFlow(): Flow<List<WorkoutEntity>>
 
+    @Query("SELECT sourceId || '|' || start FROM workout")
+    fun allKeys(): List<String>
+
     @Query("SELECT COUNT(*) FROM workout")
     fun count(): Int
 }
@@ -94,6 +97,9 @@ interface BodyMeasurementDao {
 
     @Query("SELECT * FROM body_measurement ORDER BY time DESC")
     fun allFlow(): Flow<List<BodyMeasurementEntity>>
+
+    @Query("SELECT sourceId || '|' || time FROM body_measurement")
+    fun allKeys(): List<String>
 
     @Query("SELECT COUNT(*) FROM body_measurement")
     fun count(): Int

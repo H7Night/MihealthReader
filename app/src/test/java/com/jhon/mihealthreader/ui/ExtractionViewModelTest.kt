@@ -144,10 +144,15 @@ class ExtractionViewModelTest {
     @Test
     fun `summary reflects preloaded local store`() = runTest(main) {
         store.save(
-            sleep = emptyList(),
-            samples = listOf(StepSample("dev", 0, 0, 10, 5, 1)),
-            sourcePackage = "com.mi.health",
-            at = 1000,
+            com.jhon.mihealthreader.parse.ParsedData(
+                sleep = emptyList(),
+                samples = listOf(StepSample("dev", 0, 0, 10, 5, 1)),
+                activity = emptyList(),
+                skipped = 0,
+                outputFile = File("out.json"),
+            ),
+            "com.mi.health",
+            1000,
         )
         val vm = viewModel(
             granted(),

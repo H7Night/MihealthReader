@@ -3,6 +3,7 @@ package com.jhon.mihealthreader.data
 import androidx.room.Room
 import com.jhon.mihealthreader.local.LocalStore
 import com.jhon.mihealthreader.local.MiHealthDatabase
+import com.jhon.mihealthreader.parse.ParsedData
 import com.jhon.mihealthreader.parse.SleepSession
 import com.jhon.mihealthreader.parse.SleepStage
 import com.jhon.mihealthreader.parse.StepSample
@@ -15,6 +16,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
+import java.io.File
 
 @RunWith(RobolectricTestRunner::class)
 class ParsedRepositoryTest {
@@ -38,13 +40,18 @@ class ParsedRepositoryTest {
     @Test
     fun `aggregates step samples into newest-first daily activity`() = runTest {
         store.save(
-            sleep = emptyList(),
-            samples = listOf(
-                StepSample("dev", 0, 0, 10, 5, 1),
-                StepSample("dev", 86400, 0, 20, 12, 2),
+            ParsedData(
+                sleep = emptyList(),
+                samples = listOf(
+                    StepSample("dev", 0, 0, 10, 5, 1),
+                    StepSample("dev", 86400, 0, 20, 12, 2),
+                ),
+                activity = emptyList(),
+                skipped = 0,
+                outputFile = File("out.json"),
             ),
-            sourcePackage = "com.mi.health",
-            at = 1,
+            "com.mi.health",
+            1,
         )
         val activity = repo.dailyActivity().first()
         assertEquals(2, activity.size)
@@ -55,10 +62,15 @@ class ParsedRepositoryTest {
     @Test
     fun `returns saved sleep sessions`() = runTest {
         store.save(
-            sleep = listOf(SleepSession(100, 200, 2, 1, 1, 60, 50, 70, listOf(SleepStage(100, 160, 3, "light")))),
-            samples = emptyList(),
-            sourcePackage = "com.mi.health",
-            at = 1,
+            ParsedData(
+                sleep = listOf(SleepSession(100, 200, 2, 1, 1, 60, 50, 70, listOf(SleepStage(100, 160, 3, "light")))),
+                samples = emptyList(),
+                activity = emptyList(),
+                skipped = 0,
+                outputFile = File("out.json"),
+            ),
+            "com.mi.health",
+            1,
         )
         val sleep = repo.sleepSessions().first().single()
         assertEquals(1, sleep.stages.size)
