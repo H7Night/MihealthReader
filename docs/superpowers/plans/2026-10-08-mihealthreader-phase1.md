@@ -13,7 +13,8 @@
 ## Global Constraints
 
 - 语言 Kotlin；UI 用 Jetpack Compose（Material 3）；单模块 `:app`。
-- root 封装使用 `com.github.topjohnwu.libsu:core:5.2.2`（JitPack 仓库）。
+- root 封装使用 `com.github.topjohnwu.libsu:core:5.2.2` + `com.github.topjohnwu.libsu:io:5.2.2`（JitPack 仓库）。
+- JDK 21（Debian 13 自带）；Android SDK 安装到 `/opt/android-sdk`。
 - 签名使用默认 debug keystore（`signingConfigs.debug`），不自建签名。
 - `applicationId = "com.jhon.mihealthreader"`；`minSdk 26`、`compileSdk 35`、`targetSdk 35`。
 - 存储位置：应用内部私有存储 `context.filesDir/exports/<时间戳>/`。
@@ -86,10 +87,10 @@ app/src/test/java/com/jhon/mihealthreader/
 **Interfaces:**
 - Produces: 可编译的 `:app` 模块，`applicationId`、SDK 版本、libsu/Compose 依赖就绪，`MainActivity` 显示 Compose 文本。
 
-- [ ] **Step 1: 安装 JDK 17**
+- [ ] **Step 1: 安装 JDK**
 
-Run: `apt-get update && apt-get install -y openjdk-17-jdk`
-Expected: `java -version` 输出 17.x。
+Run: `apt-get update && apt-get install -y openjdk-21-jdk`
+Expected: `java -version` 输出 21.x。（Debian 13 提供 OpenJDK 21；Gradle 8.9 + AGP 8.7 + Kotlin 2.0.21 均支持。）
 
 - [ ] **Step 2: 安装 Android 命令行工具与 SDK 组件**
 
