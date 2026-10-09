@@ -71,8 +71,10 @@ adb exec-out run-as com.jhon.mihealthreader tar -c files/exports | tar -x
 ## 7. 阶段 2 实际结果（2026-10-09，通过）
 
 - 规范化输出：`<快照>/parsed/normalized.json`（信封 `schema_version=1.0`、`source=mihealthreader`）。
-- 结果量级：**睡眠 96 段**、**活动 64 天**（2026-04-02 → 2026-10-09，总步数 342,214）。
-- 睡眠阶段码经真机校准：`2=deep(深睡)`、`3=light(浅睡)`、`5=awake(清醒)`；与源库自带
-  `sleep_deep_duration`/`sleep_light_duration` 分钟数完全一致（例：某会话深睡合计 132m、浅睡 421m）。
+- 结果量级：**睡眠 97 段**、**活动 65 天**（总步数 345,796）。
+- 睡眠阶段码经真机 + HCUnlock 交叉校准：`1=awake`、`2=deep(深睡)`、`3=light(浅睡)`、`4=rem`、`5=awake`；
+  与源库自带 `sleep_deep_duration`/`sleep_light_duration` 分钟数完全一致（例：某会话深睡 82m、浅睡 297m，逐段求和吻合）。
 - 步数按本地日聚合，并做分钟切片去重（同分钟取较大 `steps`）。
-- 界面：活动视图（64 天列表 + 最近一天汇总）、睡眠视图（96 段 + 阶段时间线）均真机渲染正常。
+- **`-shm` 处理**：抽取时不复制 `-shm`，打开副本前先删除过时 `-shm`（避免 SQLite 信任过期 wal-index 导致 SIGBUS），
+  打开后再清理 SQLite 自动生成的 `-shm`；真机确认 raw 快照只保留 `db + -wal`。
+- 界面：活动视图（65 天列表 + 最近一天汇总）、睡眠视图（97 段 + 阶段时间线，标签 清醒/浅睡/深睡）均真机渲染正常。
