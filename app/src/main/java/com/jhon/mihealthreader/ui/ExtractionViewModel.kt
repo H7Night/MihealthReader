@@ -2,7 +2,6 @@ package com.jhon.mihealthreader.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.jhon.mihealthreader.data.ExportRepository
 import com.jhon.mihealthreader.discover.TargetFinder
 import com.jhon.mihealthreader.dump.Dumper
 import com.jhon.mihealthreader.dump.ManifestData
@@ -27,7 +26,6 @@ class ExtractionViewModel(
     private val extractor: Extractor,
     private val dumper: Dumper,
     private val manifestWriter: ManifestWriter,
-    @Suppress("unused") private val repository: ExportRepository,
     private val androidVersion: Int,
     private val appVersion: String,
     private val exportsDir: File,

@@ -11,7 +11,7 @@ class RoutesTest {
         assertTrue(showsBottomBar(Routes.TODAY))
         assertTrue(showsBottomBar(Routes.CHARTS))
         assertTrue(showsBottomBar(Routes.SETTINGS))
-        assertFalse(showsBottomBar(Routes.BROWSE))
         assertFalse(showsBottomBar(null))
+        assertFalse(showsBottomBar("detail/STEPS"))
     }
 }

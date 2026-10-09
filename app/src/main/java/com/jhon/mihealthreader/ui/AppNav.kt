@@ -1,5 +1,7 @@
 package com.jhon.mihealthreader.ui
 
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
@@ -23,9 +25,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.jhon.mihealthreader.data.ExportManager
-import com.jhon.mihealthreader.data.ExportRepository
 import com.jhon.mihealthreader.data.ParsedRepository
-import com.jhon.mihealthreader.data.TableEntry
 import com.jhon.mihealthreader.local.BackendPreferences
 import com.jhon.mihealthreader.root.ShizukuPermission
 import com.jhon.mihealthreader.ui.nav.Routes
@@ -33,15 +33,12 @@ import com.jhon.mihealthreader.ui.nav.showsBottomBar
 import com.jhon.mihealthreader.ui.screens.ChartsScreen
 import com.jhon.mihealthreader.ui.screens.MetricDetailScreen
 import com.jhon.mihealthreader.ui.screens.SettingsScreen
-import com.jhon.mihealthreader.ui.screens.TableDetailScreen
-import com.jhon.mihealthreader.ui.screens.TableListScreen
 import com.jhon.mihealthreader.ui.screens.TodayScreen
 import java.io.File
 
 @Composable
 fun AppNav(
     extractionViewModel: ExtractionViewModel,
-    repository: ExportRepository,
     parsedRepository: ParsedRepository,
     exportsDir: File,
 ) {
@@ -79,6 +76,10 @@ fun AppNav(
             navController = navController,
             startDestination = Routes.TODAY,
             modifier = Modifier.padding(padding),
+            enterTransition = { EnterTransition.None },
+            exitTransition = { ExitTransition.None },
+            popEnterTransition = { EnterTransition.None },
+            popExitTransition = { ExitTransition.None },
         ) {
             composable(Routes.TODAY) {
                 val summary by extractionViewModel.summary.collectAsState()
@@ -127,27 +128,7 @@ fun AppNav(
                         ShizukuPermission.request(1001) { granted -> shizukuGranted = granted }
                     },
                     onStart = { extractionViewModel.start() },
-                    onBrowse = { navController.navigate(Routes.BROWSE) },
                 )
-            }
-
-            composable(Routes.BROWSE) {
-                val browser = remember { BrowserViewModel(repository, repository.latestSnapshot()) }
-                var selected by remember { mutableStateOf<TableEntry?>(null) }
-                val entry = selected
-                if (entry == null) {
-                    TableListScreen(
-                        tables = browser.tables(),
-                        onTable = { selected = it },
-                        onBack = { navController.popBackStack() },
-                    )
-                } else {
-                    TableDetailScreen(
-                        title = entry.name,
-                        rows = browser.rows(entry),
-                        onBack = { selected = null },
-                    )
-                }
             }
         }
     }

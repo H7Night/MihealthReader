@@ -4,7 +4,6 @@ import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import com.jhon.mihealthreader.data.ExportRepository
 import com.jhon.mihealthreader.data.ParsedRepository
 import com.jhon.mihealthreader.discover.PackageScanner
 import com.jhon.mihealthreader.discover.TargetLocator
@@ -26,7 +25,6 @@ class MainActivity : ComponentActivity() {
 
         val shell = BackendManager(this).current()
         val exportsDir = File(filesDir, "exports")
-        val repository = ExportRepository(exportsDir)
         val localStore = LocalStore(MiHealthDatabase.build(applicationContext))
         val parsedRepository = ParsedRepository(localStore)
         val scanner = PackageScanner {
@@ -38,7 +36,6 @@ class MainActivity : ComponentActivity() {
             extractor = DbExtractor(SourceReader { path -> shell.openFile(path) }),
             dumper = DbDumper(),
             manifestWriter = ManifestWriter(),
-            repository = repository,
             androidVersion = Build.VERSION.SDK_INT,
             appVersion = "0.1.0",
             exportsDir = exportsDir,
@@ -47,7 +44,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             MiHealthTheme {
-                AppNav(extractionViewModel, repository, parsedRepository, exportsDir)
+                AppNav(extractionViewModel, parsedRepository, exportsDir)
             }
         }
     }

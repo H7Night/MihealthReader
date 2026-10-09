@@ -39,7 +39,6 @@ fun SettingsScreen(
     onSelectBackend: (BackendType) -> Unit,
     onRequestShizuku: () -> Unit,
     onStart: () -> Unit,
-    onBrowse: () -> Unit,
 ) {
     val context = LocalContext.current
     var exportMessage by remember { mutableStateOf<String?>(null) }
@@ -120,8 +119,6 @@ fun SettingsScreen(
         exportMessage?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
 
 
-        Text("高级", style = MaterialTheme.typography.titleMedium)
-        Button(onClick = onBrowse) { Text("浏览原始表（调试）") }
 
 
         Text("关于", style = MaterialTheme.typography.titleMedium)

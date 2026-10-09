@@ -4,7 +4,6 @@ object Routes {
     const val TODAY = "today"
     const val CHARTS = "charts"
     const val SETTINGS = "settings"
-    const val BROWSE = "browse"
 }
 
 fun showsBottomBar(route: String?): Boolean =

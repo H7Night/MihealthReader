@@ -1,6 +1,5 @@
 package com.jhon.mihealthreader.ui
 
-import com.jhon.mihealthreader.data.ExportRepository
 import com.jhon.mihealthreader.discover.TargetApp
 import com.jhon.mihealthreader.discover.TargetFinder
 import com.jhon.mihealthreader.dump.DbDumpResult
@@ -84,7 +83,6 @@ class ExtractionViewModelTest {
         extractor = extractor,
         dumper = dumper,
         manifestWriter = writer,
-        repository = ExportRepository(tmp.root),
         androidVersion = 34,
         appVersion = "0.1.0",
         exportsDir = tmp.root,
