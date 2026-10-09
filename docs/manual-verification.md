@@ -45,3 +45,25 @@ adb exec-out run-as com.jhon.mihealthreader tar -c files/exports | tar -x
 - 能在应用内完成一次提取并浏览到数据表与行。
 - `manifest.json` 的行数与源库一致（至少睡眠/步数相关表）。
 - 失败路径（root 被拒 / 未找到包 / 加密库）都有明确提示且不崩溃。
+
+## 6. 实际结果（2026-10-09，阶段 1 通过）
+
+- 设备：OnePlus 15（CPH2747），**Android 16（SDK 36）**，root 为 **KernelSU**。
+- 目标包：**`com.mi.health`**（小米运动健康），数据库为**明文 SQLite，未加密**。
+- 真实健康数据在嵌套目录：`databases/2476836171/cn/{fitness_data, fitness_summary}`（含 `-wal`/`-shm`）。
+- 关键结论：**必须让 root shell 运行在全局挂载命名空间**，否则 App 命名空间看不到其他 App 数据目录
+  （命令 `exit=1` 且无输出）。已通过 libsu `FLAG_MOUNT_MASTER`（等价 `su --mount-master`）解决。
+- 提取结果：**共 112 张表**。其中 `fitness_data`（65 表）含：
+  - `sleep_segment` 96 行（睡眠阶段、时长、心率）
+  - `step_record` 6334 行（步数/距离/卡路里）
+  - `hr_record` 7266 行、`calorie_record` 12305 行
+  `fitness_summary` 含 `daily_report` 358 行等。
+- 导出产物：`/data/user/0/com.jhon.mihealthreader/files/exports/2026-10-09T11:41:11.569595/`
+  （`raw/` 原始快照约 40MB、`json/` 每表一个文件、`manifest.json`）。
+- 浏览功能验证：表格列表显示 112 张表及行数；点表后详情页正确渲染行 JSON。
+
+### 待阶段 2 使用
+
+- 睡眠：`fitness_data.sleep_segment`（`value` 字段内嵌 JSON，含 `items[].state`/`start_time`/`end_time`、`sleep_deep_duration` 等）。
+- 步数：`fitness_data.step_record`（`value` 内嵌 `{time,steps,distance,calories}`）。
+- 日汇总：`fitness_summary.daily_report`。
