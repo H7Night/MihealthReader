@@ -82,6 +82,7 @@ fun AppNav(
             composable(Routes.TODAY) {
                 val summary by extractionViewModel.summary.collectAsState()
                 TodayScreen(
+                    parsedRepository = parsedRepository,
                     summary = summary,
                     onGoSettings = { navController.navigateSingleTop(Routes.SETTINGS) },
                 )
