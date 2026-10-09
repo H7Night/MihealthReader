@@ -15,7 +15,7 @@ import com.jhon.mihealthreader.extract.DbExtractor
 import com.jhon.mihealthreader.extract.SourceReader
 import com.jhon.mihealthreader.local.LocalStore
 import com.jhon.mihealthreader.local.MiHealthDatabase
-import com.jhon.mihealthreader.root.LibsuRootShell
+import com.jhon.mihealthreader.root.BackendManager
 import com.jhon.mihealthreader.ui.AppNav
 import com.jhon.mihealthreader.ui.ExtractionViewModel
 import java.io.File
@@ -24,7 +24,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val shell = LibsuRootShell()
+        val shell = BackendManager(this).current()
         val exportsDir = File(filesDir, "exports")
         val repository = ExportRepository(exportsDir)
         val localStore = LocalStore(MiHealthDatabase.build(applicationContext))

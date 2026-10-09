@@ -2,6 +2,7 @@ package com.jhon.mihealthreader.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
@@ -11,6 +12,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.jhon.mihealthreader.local.BackendType
 import com.jhon.mihealthreader.local.LocalSummary
 import com.jhon.mihealthreader.ui.ExtractionState
 import java.time.Instant
@@ -22,6 +24,10 @@ fun ExtractionScreen(
     state: ExtractionState,
     rootGranted: Boolean?,
     summary: LocalSummary,
+    backend: BackendType,
+    shizukuGranted: Boolean,
+    onSelectBackend: (BackendType) -> Unit,
+    onRequestShizuku: () -> Unit,
     onStart: () -> Unit,
     onBrowse: () -> Unit,
     onActivity: () -> Unit,
@@ -42,6 +48,27 @@ fun ExtractionScreen(
             null -> "检测中…"
         })
         Text(summaryText(summary), style = MaterialTheme.typography.bodyMedium)
+
+        HorizontalDivider()
+
+        Text(
+            "数据源：" + when (backend) {
+                BackendType.ROOT -> "Root"
+                BackendType.SHIZUKU -> "Shizuku"
+            },
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Button(onClick = { onSelectBackend(BackendType.ROOT) }) { Text("Root") }
+            Button(onClick = { onSelectBackend(BackendType.SHIZUKU) }) { Text("Shizuku") }
+        }
+        if (backend == BackendType.SHIZUKU && !shizukuGranted) {
+            Button(onClick = onRequestShizuku) { Text("请求 Shizuku 权限") }
+            Text(
+                "Shizuku 需以 root 启动才能读取数据；切换数据源后请重启 App 生效",
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
 
         HorizontalDivider()
 

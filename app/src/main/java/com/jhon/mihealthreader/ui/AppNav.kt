@@ -6,12 +6,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.jhon.mihealthreader.data.ExportRepository
 import com.jhon.mihealthreader.data.ParsedRepository
 import com.jhon.mihealthreader.data.TableEntry
+import com.jhon.mihealthreader.local.BackendPreferences
+import com.jhon.mihealthreader.root.ShizukuPermission
 import com.jhon.mihealthreader.ui.screens.ActivityScreen
 import com.jhon.mihealthreader.ui.screens.BodyScreen
 import com.jhon.mihealthreader.ui.screens.ExtractionScreen
@@ -35,10 +38,23 @@ fun AppNav(
             val state by extractionViewModel.state.collectAsState()
             val rootGranted by extractionViewModel.rootGranted.collectAsState()
             val summary by extractionViewModel.summary.collectAsState()
+            val context = LocalContext.current
+            val backendPrefs = remember { BackendPreferences(context) }
+            var backend by remember { mutableStateOf(backendPrefs.get()) }
+            var shizukuGranted by remember { mutableStateOf(ShizukuPermission.isGranted()) }
             ExtractionScreen(
                 state = state,
                 rootGranted = rootGranted,
                 summary = summary,
+                backend = backend,
+                shizukuGranted = shizukuGranted,
+                onSelectBackend = {
+                    backendPrefs.set(it)
+                    backend = it
+                },
+                onRequestShizuku = {
+                    ShizukuPermission.request(1001) { granted -> shizukuGranted = granted }
+                },
                 onStart = { extractionViewModel.start() },
                 onBrowse = { navController.navigate("browse") },
                 onActivity = { navController.navigate("activity") },
