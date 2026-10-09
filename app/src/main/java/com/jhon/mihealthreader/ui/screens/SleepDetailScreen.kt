@@ -105,11 +105,41 @@ fun SleepDetailScreen(
             shape = RoundedCornerShape(24.dp),
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text(
-                SleepSummary.describe(session),
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(16.dp),
-            )
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("全天睡眠", style = MaterialTheme.typography.titleMedium)
+                Text(formatMinutesCn(session.durationMinutes), style = MaterialTheme.typography.headlineMedium)
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    LegendDot(deepColor, "深睡")
+                    LegendDot(lightColor, "浅睡")
+                    LegendDot(awakeColor, "清醒")
+                }
+                if (session.stages.isNotEmpty()) {
+                    Hypnogram(
+                        segments = session.stages.map { HypnoSegment(it.start, it.end, it.stateName) },
+                        modifier = Modifier.fillMaxWidth().height(120.dp),
+                        deepColor = deepColor,
+                        lightColor = lightColor,
+                        awakeColor = awakeColor,
+                    )
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(SleepSummary.hhmm(session.start), style = MaterialTheme.typography.labelSmall)
+                        Text(SleepSummary.hhmm(session.end), style = MaterialTheme.typography.labelSmall)
+                    }
+                } else {
+                    Text("无阶段数据")
+                }
+            }
+        }
+
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            shape = RoundedCornerShape(24.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("睡眠详情", style = MaterialTheme.typography.titleMedium)
+                Text(SleepSummary.describe(session), style = MaterialTheme.typography.bodyMedium)
+            }
         }
 
         val recent = remember(sleep) { sleep.filter { SleepSummary.isNightSleep(it) }.take(14) }
@@ -134,37 +164,6 @@ fun SleepDetailScreen(
                         DottedLine(values, Modifier.fillMaxWidth().height(48.dp), MaterialTheme.colorScheme.primary)
                     }
                     Text("近 ${regularity.nights} 晚", style = MaterialTheme.typography.labelSmall)
-                }
-            }
-        }
-
-        Surface(
-            color = MaterialTheme.colorScheme.surfaceVariant,
-            shape = RoundedCornerShape(24.dp),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("全天睡眠", style = MaterialTheme.typography.titleMedium)
-                Text(formatMinutesCn(session.durationMinutes), style = MaterialTheme.typography.headlineMedium)
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    LegendDot(deepColor, "深睡")
-                    LegendDot(lightColor, "浅睡")
-                    LegendDot(awakeColor, "清醒")
-                }
-                if (session.stages.isNotEmpty()) {
-                    Hypnogram(
-                        segments = session.stages.map { HypnoSegment(it.start, it.end, it.stateName) },
-                        modifier = Modifier.fillMaxWidth().height(120.dp),
-                        deepColor = deepColor,
-                        lightColor = lightColor,
-                        awakeColor = awakeColor,
-                    )
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(SleepSummary.hhmm(session.start), style = MaterialTheme.typography.labelSmall)
-                        Text(SleepSummary.hhmm(session.end), style = MaterialTheme.typography.labelSmall)
-                    }
-                } else {
-                    Text("无阶段数据")
                 }
             }
         }
