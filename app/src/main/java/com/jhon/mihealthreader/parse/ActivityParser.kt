@@ -43,7 +43,7 @@ object ActivityParser {
 
     fun parseSamples(db: SQLiteDatabase): List<StepSample> {
         val samples = mutableListOf<StepSample>()
-        val sql = if (hasColumn(db, "step_record", "sid")) {
+        val sql = if (db.hasColumn("step_record", "sid")) {
             "SELECT value, zoneOffsetInSec, isDeleted, sid FROM step_record"
         } else {
             "SELECT value, zoneOffsetInSec, isDeleted, '' FROM step_record"
@@ -73,15 +73,5 @@ object ActivityParser {
             }
         }
         return samples
-    }
-
-    private fun hasColumn(db: SQLiteDatabase, table: String, column: String): Boolean {
-        db.rawQuery("PRAGMA table_info($table)", null).use { cursor ->
-            val nameIndex = cursor.getColumnIndex("name")
-            while (cursor.moveToNext()) {
-                if (cursor.getString(nameIndex).equals(column, ignoreCase = true)) return true
-            }
-        }
-        return false
     }
 }

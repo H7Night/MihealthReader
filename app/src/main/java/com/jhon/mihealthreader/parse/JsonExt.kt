@@ -7,3 +7,6 @@ internal fun JSONObject.optLongOrNull(key: String): Long? =
 
 internal fun JSONObject.optIntOrNull(key: String): Int? =
     if (has(key) && !isNull(key)) optInt(key) else null
+
+internal fun JSONObject.optDoubleOrNull(key: String): Double? =
+    if (has(key) && !isNull(key)) optDouble(key) else null
