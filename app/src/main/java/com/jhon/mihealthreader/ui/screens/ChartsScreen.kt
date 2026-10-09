@@ -2,14 +2,17 @@ package com.jhon.mihealthreader.ui.screens
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -126,12 +129,23 @@ fun ChartsScreen(parsedRepository: ParsedRepository) {
 
 @Composable
 private fun ChartBlock(hasData: Boolean, title: String, chart: @Composable () -> Unit) {
-    Column(modifier = Modifier.padding(top = 12.dp)) {
+    Column(
+        modifier = Modifier.padding(top = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
         Text(title, style = MaterialTheme.typography.titleMedium)
-        if (hasData) {
-            chart()
-        } else {
-            Text("暂无数据", modifier = Modifier.padding(top = 24.dp))
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            shape = RoundedCornerShape(24.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Box(modifier = Modifier.padding(16.dp)) {
+                if (hasData) {
+                    chart()
+                } else {
+                    Text("暂无数据")
+                }
+            }
         }
     }
 }

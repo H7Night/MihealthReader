@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -89,7 +88,6 @@ fun SettingsScreen(
         }
         Text("切换数据源后请重启 App 生效", style = MaterialTheme.typography.bodySmall)
 
-        HorizontalDivider()
 
         Text("数据提取", style = MaterialTheme.typography.titleMedium)
         Text(summaryText(summary), style = MaterialTheme.typography.bodyMedium)
@@ -109,7 +107,6 @@ fun SettingsScreen(
             }
         }
 
-        HorizontalDivider()
 
         Text("数据导出", style = MaterialTheme.typography.titleMedium)
         Text("导出规范化 JSON（normalized.json）", style = MaterialTheme.typography.bodySmall)
@@ -122,12 +119,10 @@ fun SettingsScreen(
         }) { Text("导出数据（JSON）") }
         exportMessage?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
 
-        HorizontalDivider()
 
         Text("高级", style = MaterialTheme.typography.titleMedium)
         Button(onClick = onBrowse) { Text("浏览原始表（调试）") }
 
-        HorizontalDivider()
 
         Text("关于", style = MaterialTheme.typography.titleMedium)
         Text("MihealthReader · 读取「小米运动健康」本地数据库并做本地记录与分析")
