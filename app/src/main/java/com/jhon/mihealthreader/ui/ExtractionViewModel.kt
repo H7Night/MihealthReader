@@ -43,12 +43,16 @@ class ExtractionViewModel(
     private val _summary = MutableStateFlow(LocalSummary(null, null, 0, 0))
     val summary: StateFlow<LocalSummary> = _summary.asStateFlow()
 
+    private val _dataLoaded = MutableStateFlow(false)
+    val dataLoaded: StateFlow<Boolean> = _dataLoaded.asStateFlow()
+
     private var running = false
 
     init {
         viewModelScope.launch(io) {
             _rootGranted.value = rootShell.isGranted()
             _summary.value = localStore.summary()
+            _dataLoaded.value = true
         }
     }
 

@@ -12,14 +12,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -37,6 +40,7 @@ import java.time.ZoneId
 fun TodayScreen(
     parsedRepository: ParsedRepository,
     summary: LocalSummary,
+    dataLoaded: Boolean,
     onOpenDetail: (Metric) -> Unit,
     onGoSettings: () -> Unit,
 ) {
@@ -60,17 +64,29 @@ fun TodayScreen(
     val latestBody = body.firstOrNull()
 
     Column(modifier = Modifier.fillMaxSize()) {
+        var dismissed by remember { mutableStateOf(false) }
+        if (dataLoaded && summary.lastExtractedAt == null && !dismissed) {
+            AlertDialog(
+                onDismissRequest = { dismissed = true },
+                title = { Text("暂无数据") },
+                text = { Text("请先在设置中提取「小米运动健康」数据") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        dismissed = true
+                        onGoSettings()
+                    }) { Text("去设置") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { dismissed = true }) { Text("取消") }
+                },
+            )
+        }
+
         Text(
             "今天",
             style = MaterialTheme.typography.headlineSmall,
             modifier = Modifier.padding(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 8.dp),
         )
-
-        if (summary.lastExtractedAt == null) {
-            Text("暂无数据，请先在设置中提取", modifier = Modifier.padding(20.dp))
-            Button(onClick = onGoSettings, modifier = Modifier.padding(horizontal = 20.dp)) { Text("去设置") }
-            return
-        }
 
         val steps7 = remember(activity) { ChartData.lastN(ChartData.stepsSeries(activity), 7).map { it.value } }
         val sleep7 = remember(sleep) { ChartData.lastN(ChartData.sleepSeries(sleep), 7).map { it.total } }

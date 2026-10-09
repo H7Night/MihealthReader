@@ -84,9 +84,11 @@ fun AppNav(
         ) {
             composable(Routes.TODAY) {
                 val summary by extractionViewModel.summary.collectAsState()
+                val dataLoaded by extractionViewModel.dataLoaded.collectAsState()
                 TodayScreen(
                     parsedRepository = parsedRepository,
                     summary = summary,
+                    dataLoaded = dataLoaded,
                     onOpenDetail = { metric ->
                         if (metric == Metric.SLEEP) {
                             navController.navigate("sleep_detail")
