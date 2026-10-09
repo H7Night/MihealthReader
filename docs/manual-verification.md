@@ -114,3 +114,13 @@ adb exec-out run-as com.jhon.mihealthreader tar -c files/exports | tar -x
 - 真机导出：`导出数据（JSON）` → 系统保存对话框 → `/sdcard/Download/mihealth-normalized.json`（2.09MB），提示"已导出到所选位置"。
 - 旧列表视图（活动/睡眠/心率/血氧/运动/体重）已移除，改由图表呈现。
 - 75 个单元测试全绿，`lintDebug`/`assembleDebug` 通过。
+
+## 12. 平面排版重排（参考 Google Health，2026-10-09，通过）
+
+- 参考 Google Health 截图，采用**平面排版**：卡片浅灰底（`surfaceVariant`）、24dp 圆角、**无阴影无分割线**。
+- **今天**：`主要指標` 式 **2 列卡片网格**，每卡 = 小标签 → 大数值+单位 → **近 7 天迷你图** → 白色状态胶囊。
+  - 迷你图：步数/睡眠/运动用**圆角胶囊柱**；心率/血氧/体重用**点线图**（新增 `CapsuleBars`/`DottedLine`）。
+- **视图**：指标 Chips + 图表放入平面卡片。
+- **设置**：去分割线，分区标题 + 平面按钮。
+- 底部导航选中项有胶囊高亮（Material 3）。
+- 真机截图对比：今天/视图/设置三页与 Google Health 平面风格一致。
