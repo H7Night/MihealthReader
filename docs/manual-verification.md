@@ -147,6 +147,13 @@ adb exec-out run-as com.jhon.mihealthreader tar -c files/exports | tar -x
 - 修复：`values-v31/themes.xml` 设置 `windowSplashScreenBackground` = 应用背景色、`windowSplashScreenAnimatedIcon` = 透明；`windowBackground` = 应用背景色。
 - 验证：冷启动帧现为**纯背景（无图标）**，随后无缝进入"今天"。
 
+## 18. 空数据提示改为弹窗（2026-10-09，通过）
+
+- 去掉"暂无数据"整页替换；打开 App **始终进入主页卡片网格**，无数据时卡片显示"—"。
+- 无数据时弹出 **AlertDialog**："暂无数据 / 请先在设置中提取「小米运动健康」数据"，按钮 `取消` / `去设置`。
+- VM 新增 `dataLoaded` 标记，避免加载完成前误弹。
+- 真机（root 清空数据后）：主页空白网格 + 弹窗正常。
+
 ## 15. 视图图表视觉优化（参考小米运动健康 + MD3，2026-10-09，通过）
 
 - **头部大数值**：区间代表值（最新）+ 单位。
