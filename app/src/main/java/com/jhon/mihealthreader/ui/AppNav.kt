@@ -31,6 +31,7 @@ import com.jhon.mihealthreader.root.ShizukuPermission
 import com.jhon.mihealthreader.ui.nav.Routes
 import com.jhon.mihealthreader.ui.nav.showsBottomBar
 import com.jhon.mihealthreader.ui.screens.ChartsScreen
+import com.jhon.mihealthreader.ui.screens.MetricDetailScreen
 import com.jhon.mihealthreader.ui.screens.SettingsScreen
 import com.jhon.mihealthreader.ui.screens.TableDetailScreen
 import com.jhon.mihealthreader.ui.screens.TableListScreen
@@ -84,12 +85,22 @@ fun AppNav(
                 TodayScreen(
                     parsedRepository = parsedRepository,
                     summary = summary,
+                    onOpenDetail = { navController.navigate("detail/${it.name}") },
                     onGoSettings = { navController.navigateSingleTop(Routes.SETTINGS) },
                 )
             }
 
             composable(Routes.CHARTS) {
                 ChartsScreen(parsedRepository = parsedRepository)
+            }
+
+            composable("detail/{metric}") { entry ->
+                val metric = Metric.valueOf(entry.arguments?.getString("metric") ?: Metric.STEPS.name)
+                MetricDetailScreen(
+                    metric = metric,
+                    parsedRepository = parsedRepository,
+                    onBack = { navController.popBackStack() },
+                )
             }
 
             composable(Routes.SETTINGS) {

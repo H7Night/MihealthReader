@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import com.jhon.mihealthreader.data.ChartData
 import com.jhon.mihealthreader.data.ParsedRepository
 import com.jhon.mihealthreader.local.LocalSummary
+import com.jhon.mihealthreader.ui.Metric
 import com.jhon.mihealthreader.ui.charts.CapsuleBars
 import com.jhon.mihealthreader.ui.charts.DottedLine
 import java.time.Instant
@@ -36,6 +37,7 @@ import java.time.ZoneId
 fun TodayScreen(
     parsedRepository: ParsedRepository,
     summary: LocalSummary,
+    onOpenDetail: (Metric) -> Unit,
     onGoSettings: () -> Unit,
 ) {
     val activity by parsedRepository.dailyActivity().collectAsState(initial = emptyList())
@@ -70,14 +72,12 @@ fun TodayScreen(
             return
         }
 
-        val steps7 = remember(activity) { ChartData.dailySteps(activity, days = 7).map { it.value } }
-        val sleep7 = remember(sleep) {
-            ChartData.sleepDurations(sleep, days = 7).map { it.deep + it.light + it.awake }
-        }
-        val hr7 = remember(heart) { ChartData.dailyMetricAvg(heart, days = 7).map { it.value } }
-        val workout7 = remember(workouts) { ChartData.workoutMinutesPerDay(workouts, days = 7).map { it.value } }
-        val spo27 = remember(spo2) { ChartData.dailyMetricAvg(spo2, days = 7).map { it.value } }
-        val weights = remember(body) { body.mapNotNull { it.weightKg }.map { it.toFloat() } }
+        val steps7 = remember(activity) { ChartData.lastN(ChartData.stepsSeries(activity), 7).map { it.value } }
+        val sleep7 = remember(sleep) { ChartData.lastN(ChartData.sleepSeries(sleep), 7).map { it.total } }
+        val hr7 = remember(heart) { ChartData.lastN(ChartData.metricSeries(heart), 7).map { it.value } }
+        val workout7 = remember(workouts) { ChartData.lastN(ChartData.workoutSeries(workouts), 7).map { it.value } }
+        val spo27 = remember(spo2) { ChartData.lastN(ChartData.metricSeries(spo2), 7).map { it.value } }
+        val weights = remember(body) { ChartData.lastN(ChartData.bodySeries(body), 7).map { it.value } }
 
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
@@ -92,6 +92,7 @@ fun TodayScreen(
                     value = todayActivity?.steps?.toString() ?: "—",
                     unit = "步",
                     status = todayActivity?.let { "${it.distanceMeters} 米" },
+                    onClick = { onOpenDetail(Metric.STEPS) },
                     mini = { CapsuleBars(steps7, Modifier.fillMaxWidth().height(44.dp), primary) },
                 )
             }
@@ -101,6 +102,7 @@ fun TodayScreen(
                     value = latestSleep?.let { formatMinutes(it.durationMinutes) } ?: "—",
                     unit = null,
                     status = latestSleep?.let { "深睡 ${it.deepMinutes}m" },
+                    onClick = { onOpenDetail(Metric.SLEEP) },
                     mini = { CapsuleBars(sleep7, Modifier.fillMaxWidth().height(44.dp), tertiary) },
                 )
             }
@@ -110,6 +112,7 @@ fun TodayScreen(
                     value = latestHeart?.let { it.value.toInt().toString() } ?: "—",
                     unit = "bpm",
                     status = "静息 " + (resting.firstOrNull()?.value?.toInt()?.toString() ?: "—"),
+                    onClick = { onOpenDetail(Metric.HR) },
                     mini = { DottedLine(hr7, Modifier.fillMaxWidth().height(44.dp), primary) },
                 )
             }
@@ -119,6 +122,7 @@ fun TodayScreen(
                     value = todayWorkouts.size.toString(),
                     unit = "次",
                     status = if (todayWorkouts.isEmpty()) null else "共 ${formatDurationSeconds(todayWorkouts.sumOf { it.durationSec })}",
+                    onClick = { onOpenDetail(Metric.WORKOUT) },
                     mini = { CapsuleBars(workout7, Modifier.fillMaxWidth().height(44.dp), primary) },
                 )
             }
@@ -128,6 +132,7 @@ fun TodayScreen(
                     value = latestSpo2?.let { it.value.toInt().toString() } ?: "—",
                     unit = "%",
                     status = null,
+                    onClick = { onOpenDetail(Metric.SPO2) },
                     mini = { DottedLine(spo27, Modifier.fillMaxWidth().height(44.dp), primary) },
                 )
             }
@@ -137,6 +142,7 @@ fun TodayScreen(
                     value = latestBody?.weightKg?.toString() ?: "—",
                     unit = "kg",
                     status = latestBody?.bodyFatRate?.let { "体脂 $it%" },
+                    onClick = { onOpenDetail(Metric.BODY) },
                     mini = { DottedLine(weights, Modifier.fillMaxWidth().height(44.dp), primary) },
                 )
             }
@@ -150,9 +156,11 @@ private fun MetricGridCard(
     value: String,
     unit: String?,
     status: String?,
+    onClick: () -> Unit,
     mini: @Composable () -> Unit,
 ) {
     Surface(
+        onClick = onClick,
         color = MaterialTheme.colorScheme.surfaceVariant,
         shape = RoundedCornerShape(24.dp),
         modifier = Modifier.fillMaxWidth(),
