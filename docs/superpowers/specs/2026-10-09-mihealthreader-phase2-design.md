@@ -62,7 +62,7 @@
 
 - `sleep.start`/`end` 取 `value.bedtime`/`value.device_wake_up_time`（回退 `bed_timestamp`/`out_bed_timestamp`），单位 epoch 秒。
 - `sleep.date`（可选）取唤醒时刻的**本地日期**，用于展示。
-- 阶段码 `state_name` 映射（**真机校准**）：`2=deep`、`3=light`、`5=awake`、其它=`unknown`；
+- 阶段码 `state_name` 映射（**真机 + HCUnlock 交叉校准**）：`1=awake`、`2=deep`、`3=light`、`4=rem`、`5=awake`、其它=`unknown`；
   已用应用自带的 `sleep_deep_duration`/`sleep_light_duration` 与各 state 分钟数交叉验证。
   **同时保留原始 `state` 数值**。
 - `daily_activity.date` 为**本地日期**（`time + zoneOffsetInSec` 换算为 UTC 日期字符串 `yyyy-MM-dd`）。
@@ -124,6 +124,6 @@ com.jhon.mihealthreader.parse
 
 ## 10. 风险与待确认
 
-- 睡眠阶段码 `2/3/5` 已由真机数据校准（deep/light/awake）；`1/4` 未出现，暂归 `unknown`，输出保留原始 `state` 以兜底。
+- 睡眠阶段码 `1/2/3/4/5` 映射为 awake/deep/light/rem/awake（`1/4` 来自 HCUnlock 交叉验证，`2/3` 由真机 deep/light 字段确认）；输出保留原始 `state` 以兜底。
 - `fitness_summary.daily_report` 可能含官方日汇总，可作日后校验（本次以 `step_record` 聚合为准）。
 - 时区：使用行内 `zoneOffsetInSec` 换算本地日；无该字段时回退设备时区。

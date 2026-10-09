@@ -32,8 +32,10 @@ class SleepParserTest {
 
     @Test
     fun `state name mapping`() {
+        assertEquals("awake", SleepParser.stateName(1))
         assertEquals("deep", SleepParser.stateName(2))
         assertEquals("light", SleepParser.stateName(3))
+        assertEquals("rem", SleepParser.stateName(4))
         assertEquals("awake", SleepParser.stateName(5))
         assertEquals("unknown", SleepParser.stateName(9))
     }
