@@ -18,6 +18,17 @@ import com.jhon.mihealthreader.ui.charts.StackSegment
 import com.jhon.mihealthreader.ui.charts.StackedChartWithAxes
 import java.time.YearMonth
 
+private class Windowed<T>(val items: List<T>, val fallback: Boolean)
+
+private fun <T> window(series: List<T>, yearMonth: YearMonth, dateOf: (T) -> String): Windowed<T> {
+    val month = ChartData.inMonth(series, yearMonth, dateOf)
+    return if (month.isNotEmpty()) {
+        Windowed(month, fallback = false)
+    } else {
+        Windowed(ChartData.lastN(series, 10), fallback = true)
+    }
+}
+
 @Composable
 fun MetricChartView(
     metric: Metric,
@@ -39,77 +50,72 @@ fun MetricChartView(
     Column(modifier = modifier) {
         when (metric) {
             Metric.STEPS -> {
-                val series = remember(activity, yearMonth) {
-                    ChartData.inMonth(ChartData.stepsSeries(activity), yearMonth) { it.date }
+                val w = remember(activity, yearMonth) {
+                    window(ChartData.stepsSeries(activity), yearMonth) { it.date }
                 }
-                ChartWithAxes(
-                    series.map { it.value },
-                    series.map { shortDate(it.date) },
-                    Modifier,
-                    primary,
-                    bars = true,
-                )
-                Caption(series.lastOrNull()?.let { "${it.value.toInt()} 步 · ${it.date}" })
+                ChartWithAxes(w.items.map { it.value }, w.items.map { shortDate(it.date) }, Modifier, primary, bars = true)
+                Caption(w, w.items.lastOrNull()?.let { "${it.value.toInt()} 步 · ${it.date}" })
             }
 
             Metric.SLEEP -> {
-                val series = remember(sleep, yearMonth) {
-                    ChartData.inMonth(ChartData.sleepSeries(sleep), yearMonth) { it.date }
+                val w = remember(sleep, yearMonth) {
+                    window(ChartData.sleepSeries(sleep), yearMonth) { it.date }
                 }
                 StackedChartWithAxes(
-                    series.map {
+                    w.items.map {
                         listOf(
                             StackSegment(it.deep, primary),
                             StackSegment(it.light, tertiary),
                             StackSegment(it.awake, outline),
                         )
                     },
-                    series.map { it.total },
-                    series.map { shortDate(it.date) },
+                    w.items.map { it.total },
+                    w.items.map { shortDate(it.date) },
                     Modifier,
                 )
-                Caption(series.lastOrNull()?.let { "${it.total.toInt()} 分钟 · ${it.date}" })
+                Caption(w, w.items.lastOrNull()?.let { "${it.total.toInt()} 分钟 · ${it.date}" })
             }
 
             Metric.HR -> {
-                val series = remember(heart, yearMonth) {
-                    ChartData.inMonth(ChartData.metricSeries(heart), yearMonth) { it.date }
+                val w = remember(heart, yearMonth) {
+                    window(ChartData.metricSeries(heart), yearMonth) { it.date }
                 }
-                ChartWithAxes(series.map { it.value }, series.map { shortDate(it.date) }, Modifier, primary, bars = false)
-                Caption(series.lastOrNull()?.let { "${it.value.toInt()} bpm · ${it.date}" })
+                ChartWithAxes(w.items.map { it.value }, w.items.map { shortDate(it.date) }, Modifier, primary, bars = false)
+                Caption(w, w.items.lastOrNull()?.let { "${it.value.toInt()} bpm · ${it.date}" })
             }
 
             Metric.SPO2 -> {
-                val series = remember(spo2, yearMonth) {
-                    ChartData.inMonth(ChartData.metricSeries(spo2), yearMonth) { it.date }
+                val w = remember(spo2, yearMonth) {
+                    window(ChartData.metricSeries(spo2), yearMonth) { it.date }
                 }
-                ChartWithAxes(series.map { it.value }, series.map { shortDate(it.date) }, Modifier, primary, bars = false)
-                Caption(series.lastOrNull()?.let { "${it.value.toInt()} % · ${it.date}" })
+                ChartWithAxes(w.items.map { it.value }, w.items.map { shortDate(it.date) }, Modifier, primary, bars = false)
+                Caption(w, w.items.lastOrNull()?.let { "${it.value.toInt()} % · ${it.date}" })
             }
 
             Metric.WORKOUT -> {
-                val series = remember(workouts, yearMonth) {
-                    ChartData.inMonth(ChartData.workoutSeries(workouts), yearMonth) { it.date }
+                val w = remember(workouts, yearMonth) {
+                    window(ChartData.workoutSeries(workouts), yearMonth) { it.date }
                 }
-                ChartWithAxes(series.map { it.value }, series.map { shortDate(it.date) }, Modifier, primary, bars = true)
-                Caption(series.lastOrNull()?.let { "${it.value.toInt()} 分钟 · ${it.date}" })
+                ChartWithAxes(w.items.map { it.value }, w.items.map { shortDate(it.date) }, Modifier, primary, bars = true)
+                Caption(w, w.items.lastOrNull()?.let { "${it.value.toInt()} 分钟 · ${it.date}" })
             }
 
             Metric.BODY -> {
-                val series = remember(body, yearMonth) {
-                    ChartData.inMonth(ChartData.bodySeries(body), yearMonth) { it.date }
+                val w = remember(body, yearMonth) {
+                    window(ChartData.bodySeries(body), yearMonth) { it.date }
                 }
-                ChartWithAxes(series.map { it.value }, series.map { shortDate(it.date) }, Modifier, primary, bars = false)
-                Caption(series.lastOrNull()?.let { "${it.value} kg · ${it.date}" })
+                ChartWithAxes(w.items.map { it.value }, w.items.map { shortDate(it.date) }, Modifier, primary, bars = false)
+                Caption(w, w.items.lastOrNull()?.let { "${it.value} kg · ${it.date}" })
             }
         }
     }
 }
 
 @Composable
-private fun Caption(text: String?) {
+private fun Caption(window: Windowed<*>, text: String?) {
+    val prefix = if (window.fallback && window.items.isNotEmpty()) "本月无数据，显示最近10次 · " else ""
     Text(
-        text ?: "本月无数据",
+        prefix + (text ?: "暂无数据"),
         style = MaterialTheme.typography.bodySmall,
         modifier = Modifier.padding(top = 8.dp),
     )

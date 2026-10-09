@@ -71,7 +71,11 @@ fun ChartsScreen(parsedRepository: ParsedRepository) {
 
 @Composable
 internal fun MonthSelector(yearMonth: YearMonth, onChange: (YearMonth) -> Unit) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         TextButton(onClick = { onChange(yearMonth.minusMonths(1)) }) { Text("‹") }
         Text(
             "${yearMonth.year} 年 ${yearMonth.monthValue} 月",
