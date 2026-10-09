@@ -43,7 +43,12 @@ object ActivityParser {
 
     fun parseSamples(db: SQLiteDatabase): List<StepSample> {
         val samples = mutableListOf<StepSample>()
-        db.rawQuery("SELECT value, zoneOffsetInSec, isDeleted FROM step_record", null).use { cursor ->
+        val sql = if (hasColumn(db, "step_record", "sid")) {
+            "SELECT value, zoneOffsetInSec, isDeleted, sid FROM step_record"
+        } else {
+            "SELECT value, zoneOffsetInSec, isDeleted, '' FROM step_record"
+        }
+        db.rawQuery(sql, null).use { cursor ->
             while (cursor.moveToNext()) {
                 if (!cursor.isNull(2) && cursor.getInt(2) == 1) continue
                 val json = cursor.getString(0) ?: continue
@@ -54,8 +59,10 @@ object ActivityParser {
                 }
                 val time = obj.optLongOrNull("time") ?: continue
                 val zone = if (cursor.isNull(1)) 0 else cursor.getInt(1)
+                val sourceId = if (cursor.isNull(3)) "" else cursor.getString(3)
                 samples.add(
                     StepSample(
+                        sourceId = sourceId,
                         time = time,
                         zoneOffsetSec = zone,
                         steps = obj.optInt("steps", 0),
@@ -66,5 +73,15 @@ object ActivityParser {
             }
         }
         return samples
+    }
+
+    private fun hasColumn(db: SQLiteDatabase, table: String, column: String): Boolean {
+        db.rawQuery("PRAGMA table_info($table)", null).use { cursor ->
+            val nameIndex = cursor.getColumnIndex("name")
+            while (cursor.moveToNext()) {
+                if (cursor.getString(nameIndex).equals(column, ignoreCase = true)) return true
+            }
+        }
+        return false
     }
 }

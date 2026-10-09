@@ -22,6 +22,7 @@ data class SleepSession(
 )
 
 data class StepSample(
+    val sourceId: String,
     val time: Long,
     val zoneOffsetSec: Int,
     val steps: Int,
