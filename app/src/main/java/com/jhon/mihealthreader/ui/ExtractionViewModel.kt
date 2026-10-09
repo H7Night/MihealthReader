@@ -34,7 +34,16 @@ class ExtractionViewModel(
     private val _state = MutableStateFlow<ExtractionState>(ExtractionState.Idle)
     val state: StateFlow<ExtractionState> = _state.asStateFlow()
 
+    private val _rootGranted = MutableStateFlow<Boolean?>(null)
+    val rootGranted: StateFlow<Boolean?> = _rootGranted.asStateFlow()
+
     private var running = false
+
+    init {
+        viewModelScope.launch(io) {
+            _rootGranted.value = rootShell.isRootGranted()
+        }
+    }
 
     fun start() {
         if (running) return
