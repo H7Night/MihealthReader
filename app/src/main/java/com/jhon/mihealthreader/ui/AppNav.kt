@@ -13,10 +13,14 @@ import com.jhon.mihealthreader.data.ExportRepository
 import com.jhon.mihealthreader.data.ParsedRepository
 import com.jhon.mihealthreader.data.TableEntry
 import com.jhon.mihealthreader.ui.screens.ActivityScreen
+import com.jhon.mihealthreader.ui.screens.BodyScreen
 import com.jhon.mihealthreader.ui.screens.ExtractionScreen
+import com.jhon.mihealthreader.ui.screens.HeartRateScreen
 import com.jhon.mihealthreader.ui.screens.SleepScreen
+import com.jhon.mihealthreader.ui.screens.Spo2Screen
 import com.jhon.mihealthreader.ui.screens.TableDetailScreen
 import com.jhon.mihealthreader.ui.screens.TableListScreen
+import com.jhon.mihealthreader.ui.screens.WorkoutScreen
 
 @Composable
 fun AppNav(
@@ -39,6 +43,10 @@ fun AppNav(
                 onBrowse = { navController.navigate("browse") },
                 onActivity = { navController.navigate("activity") },
                 onSleep = { navController.navigate("sleep") },
+                onHeartRate = { navController.navigate("heartrate") },
+                onSpo2 = { navController.navigate("spo2") },
+                onWorkout = { navController.navigate("workout") },
+                onBody = { navController.navigate("body") },
             )
         }
 
@@ -54,6 +62,40 @@ fun AppNav(
             val sessions by parsedRepository.sleepSessions().collectAsState(initial = emptyList())
             SleepScreen(
                 sessions = sessions,
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable("heartrate") {
+            val resting by parsedRepository.restingHeartRate().collectAsState(initial = emptyList())
+            val samples by parsedRepository.heartRate().collectAsState(initial = emptyList())
+            HeartRateScreen(
+                resting = resting,
+                samples = samples,
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable("spo2") {
+            val samples by parsedRepository.spo2().collectAsState(initial = emptyList())
+            Spo2Screen(
+                samples = samples,
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable("workout") {
+            val workouts by parsedRepository.workouts().collectAsState(initial = emptyList())
+            WorkoutScreen(
+                workouts = workouts,
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable("body") {
+            val body by parsedRepository.bodyMeasurements().collectAsState(initial = emptyList())
+            BodyScreen(
+                measurements = body,
                 onBack = { navController.popBackStack() },
             )
         }

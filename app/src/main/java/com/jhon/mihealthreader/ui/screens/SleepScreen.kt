@@ -14,9 +14,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.jhon.mihealthreader.parse.SleepSession
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 @Composable
 fun SleepScreen(
@@ -34,9 +31,9 @@ fun SleepScreen(
             }
             items(sessions) { session ->
                 Column(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp)) {
-                    Text(formatDate(session.start), style = MaterialTheme.typography.bodyLarge)
+                    Text(formatDateTime(session.start), style = MaterialTheme.typography.bodyLarge)
                     Text(
-                        "${formatDuration(session.durationMinutes)} · 深睡 ${session.deepMinutes}m · 浅睡 ${session.lightMinutes}m",
+                        "${formatMinutes(session.durationMinutes)} · 深睡 ${session.deepMinutes}m · 浅睡 ${session.lightMinutes}m",
                         style = MaterialTheme.typography.bodySmall,
                     )
                     Text(
@@ -57,13 +54,6 @@ fun SleepScreen(
         }
     }
 }
-
-private val DATE_FORMAT = DateTimeFormatter.ofPattern("MM-dd HH:mm")
-
-private fun formatDate(epochSeconds: Long): String =
-    Instant.ofEpochSecond(epochSeconds).atZone(ZoneId.systemDefault()).format(DATE_FORMAT)
-
-private fun formatDuration(minutes: Int): String = "${minutes / 60}h ${minutes % 60}m"
 
 private fun stageLabel(stateName: String): String = when (stateName) {
     "awake" -> "清醒"

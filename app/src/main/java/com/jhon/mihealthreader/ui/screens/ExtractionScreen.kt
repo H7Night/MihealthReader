@@ -26,6 +26,10 @@ fun ExtractionScreen(
     onBrowse: () -> Unit,
     onActivity: () -> Unit,
     onSleep: () -> Unit,
+    onHeartRate: () -> Unit,
+    onSpo2: () -> Unit,
+    onWorkout: () -> Unit,
+    onBody: () -> Unit,
 ) {
     Column(
         modifier = Modifier.fillMaxSize().padding(24.dp),
@@ -66,6 +70,10 @@ fun ExtractionScreen(
         Text("数据导航", style = MaterialTheme.typography.titleMedium)
         Button(onClick = onActivity) { Text("活动视图") }
         Button(onClick = onSleep) { Text("睡眠视图") }
+        Button(onClick = onHeartRate) { Text("心率视图") }
+        Button(onClick = onSpo2) { Text("血氧视图") }
+        Button(onClick = onWorkout) { Text("运动视图") }
+        Button(onClick = onBody) { Text("体重视图") }
         Button(onClick = onBrowse) { Text("浏览数据（原始表）") }
     }
 }
