@@ -107,10 +107,10 @@ adb exec-out run-as com.jhon.mihealthreader tar -c files/exports | tar -x
 
 ## 11. UI 重构实际结果（2026-10-09，通过）
 
-- 底部 NavigationBar：**今天 / 视图 / 设置**；进入"浏览原始表"时底部栏隐藏。
+- 底部 NavigationBar：**今天 / 视图 / 设置**。
 - **今天**：卡片式概览（步数/睡眠/心率/运动/血氧/体重），空库时提示"去设置提取"。
 - **视图**：指标 Chips（步数/睡眠/心率/血氧/运动/体重）+ **自绘 Canvas 图表**（柱状/堆叠柱状/折线），按日聚合近 30 天。
-- **设置**：数据源（Root/Shizuku）、提取数据、**导出规范化 JSON（SAF）**、高级（调试浏览器）、关于。
+- **设置**：数据源（Root/Shizuku）、提取数据、**导出规范化 JSON（SAF）**、关于。
 - 真机导出：`导出数据（JSON）` → 系统保存对话框 → `/sdcard/Download/mihealth-normalized.json`（2.09MB），提示"已导出到所选位置"。
 - 旧列表视图（活动/睡眠/心率/血氧/运动/体重）已移除，改由图表呈现。
 - 75 个单元测试全绿，`lintDebug`/`assembleDebug` 通过。
@@ -133,3 +133,9 @@ adb exec-out run-as com.jhon.mihealthreader tar -c files/exports | tar -x
 - **时间视图**：图表**只按月份显示**，默认**本月**，用 `‹ 2026 年 10 月 ›` 切换月份（已移除"最近10次"选项）；
   月份选择**居中**；**若本月无数据则回退显示最近 10 次**（标题注明"本月无数据，显示最近10次"）。
 - 77 个单元测试全绿，`lintDebug`/`assembleDebug` 通过。
+
+## 14. 启动动画与调试页移除（2026-10-09）
+
+- **禁用导航跳转动画**：NavHost 进入/退出/回退过渡均设为 `None`，打开程序直接进入主界面。
+- **移除原调试页**：删除"浏览原始表（调试）"入口及其相关代码（`TableListScreen`/`TableDetailScreen`/`BrowserViewModel`/`ExportRepository`）。
+- 74 个单元测试全绿，`lintDebug`/`assembleDebug` 通过。
