@@ -2,6 +2,7 @@ package com.jhon.mihealthreader.extract
 
 import com.jhon.mihealthreader.discover.TargetApp
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -35,6 +36,21 @@ class DbExtractorTest {
         assertTrue(snapshot.directory.endsWith(File("raw/com.xiaomi.wearable/databases")))
         assertEquals("DB", snapshot.files.first { it.name == "mi.db" }.readText())
         assertEquals("WAL", snapshot.files.first { it.name == "mi.db-wal" }.readText())
+    }
+
+    @Test
+    fun `skips stale shm sidecar files`() {
+        val reader = SourceReader { ByteArrayInputStream("x".toByteArray()) }
+        val target = TargetApp(
+            "com.mi.health",
+            "/data/data/com.mi.health/databases",
+            listOf("fitness_data", "fitness_data-wal", "fitness_data-shm"),
+        )
+
+        val snapshot = DbExtractor(reader) { "T1" }.extract(target, tmp.root)
+
+        assertEquals(2, snapshot.files.size)
+        assertFalse(snapshot.files.any { it.name.endsWith("-shm") })
     }
 
     @Test

@@ -1,6 +1,6 @@
 package com.jhon.mihealthreader.parse
 
-import android.database.sqlite.SQLiteDatabase
+import com.jhon.mihealthreader.dump.SqliteSupport
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -15,11 +15,7 @@ class Normalizer {
         var activity: List<DailyActivity> = emptyList()
 
         if (fitnessData != null) {
-            val db = SQLiteDatabase.openDatabase(
-                fitnessData.absolutePath,
-                null,
-                SQLiteDatabase.OPEN_READONLY,
-            )
+            val db = SqliteSupport.openReadOnly(fitnessData)
             try {
                 sleep = runCatching { SleepParser.parse(db) }.getOrDefault(emptyList())
                 activity = runCatching {

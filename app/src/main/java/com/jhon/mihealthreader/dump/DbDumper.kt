@@ -48,7 +48,7 @@ class DbDumper(private val rowLimit: Int = Int.MAX_VALUE) : Dumper {
         val tables = mutableListOf<TableDump>()
         var db: SQLiteDatabase? = null
         try {
-            db = SQLiteDatabase.openDatabase(dbFile.absolutePath, null, SQLiteDatabase.OPEN_READONLY)
+            db = SqliteSupport.openReadOnly(dbFile)
             val names = mutableListOf<String>()
             db.rawQuery(
                 "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name != 'android_metadata'",

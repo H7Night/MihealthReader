@@ -25,14 +25,16 @@ class DbExtractor(
         val directory = File(root, "raw/${target.packageName}/databases")
         directory.mkdirs()
 
-        val files = target.dbFiles.map { relative ->
-            val dest = File(directory, relative)
-            dest.parentFile?.mkdirs()
-            sourceReader.open("${target.databasesPath}/$relative").use { input ->
-                dest.outputStream().use { output -> input.copyTo(output) }
+        val files = target.dbFiles
+            .filterNot { it.endsWith("-shm") }
+            .map { relative ->
+                val dest = File(directory, relative)
+                dest.parentFile?.mkdirs()
+                sourceReader.open("${target.databasesPath}/$relative").use { input ->
+                    dest.outputStream().use { output -> input.copyTo(output) }
+                }
+                dest
             }
-            dest
-        }
 
         return Snapshot(root, directory, target.packageName, files)
     }
