@@ -4,10 +4,12 @@ import com.jhon.mihealthreader.parse.SleepSession
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import kotlin.math.sqrt
 
 object SleepSummary {
 
     private val HHMM = DateTimeFormatter.ofPattern("HH:mm")
+    private const val ORIGIN_MINUTES = 18 * 60
 
     fun deepRatioPct(session: SleepSession): Int =
         if (session.durationMinutes > 0) session.deepMinutes * 100 / session.durationMinutes else 0
@@ -16,6 +18,37 @@ object SleepSummary {
 
     fun hhmm(epochSeconds: Long, zone: ZoneId = ZoneId.systemDefault()): String =
         Instant.ofEpochSecond(epochSeconds).atZone(zone).format(HHMM)
+
+    /** Minutes since 18:00, so bedtimes around midnight do not wrap. */
+    fun bedtimeMinutes(session: SleepSession, zone: ZoneId = ZoneId.systemDefault()): Int {
+        val time = Instant.ofEpochSecond(session.start).atZone(zone)
+        val minutes = time.hour * 60 + time.minute
+        return ((minutes - ORIGIN_MINUTES) % 1440 + 1440) % 1440
+    }
+
+    fun formatBedtime(minutesSince18: Int): String {
+        val total = ((minutesSince18 + ORIGIN_MINUTES) % 1440 + 1440) % 1440
+        return "%02d:%02d".format(total / 60, total % 60)
+    }
+
+    data class Regularity(val averageMinutes: Int, val stdMinutes: Int, val nights: Int)
+
+    fun bedtimeRegularity(
+        sessions: List<SleepSession>,
+        zone: ZoneId = ZoneId.systemDefault(),
+    ): Regularity? {
+        if (sessions.isEmpty()) return null
+        val values = sessions.map { bedtimeMinutes(it, zone) }
+        val avg = values.average()
+        val std = sqrt(values.map { (it - avg) * (it - avg) }.average())
+        return Regularity(avg.toInt(), std.toInt(), values.size)
+    }
+
+    fun regularityLabel(stdMinutes: Int): String = when {
+        stdMinutes <= 30 -> "规律"
+        stdMinutes <= 60 -> "较规律"
+        else -> "不规律"
+    }
 
     fun describe(session: SleepSession, zone: ZoneId = ZoneId.systemDefault()): String {
         val deepPct = deepRatioPct(session)

@@ -51,4 +51,23 @@ class SleepSummaryTest {
         val low = session().copy(deepMinutes = 30)
         assertTrue(SleepSummary.describe(low, zone).contains("深睡偏少"))
     }
+
+    @Test
+    fun `bedtime regularity average and std`() {
+        // Bedtimes 23:00 and 23:30 -> since-18:00 = 300 and 330 (avg 315, std 15)
+        val a = session().copy(start = 23 * 3600)
+        val b = session().copy(start = 23 * 3600 + 1800)
+        val reg = SleepSummary.bedtimeRegularity(listOf(a, b), zone)!!
+        assertEquals(315, reg.averageMinutes)
+        assertEquals(15, reg.stdMinutes)
+        assertEquals("23:15", SleepSummary.formatBedtime(reg.averageMinutes))
+        assertEquals(2, reg.nights)
+    }
+
+    @Test
+    fun `regularity label thresholds`() {
+        assertEquals("规律", SleepSummary.regularityLabel(20))
+        assertEquals("较规律", SleepSummary.regularityLabel(45))
+        assertEquals("不规律", SleepSummary.regularityLabel(90))
+    }
 }

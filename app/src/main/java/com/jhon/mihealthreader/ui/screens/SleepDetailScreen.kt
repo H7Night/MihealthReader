@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import com.jhon.mihealthreader.data.ParsedRepository
 import com.jhon.mihealthreader.data.SleepSummary
 import com.jhon.mihealthreader.parse.SleepSession
+import com.jhon.mihealthreader.ui.charts.DottedLine
 import com.jhon.mihealthreader.ui.charts.HypnoSegment
 import com.jhon.mihealthreader.ui.charts.Hypnogram
 import java.time.Instant
@@ -109,6 +110,32 @@ fun SleepDetailScreen(
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(16.dp),
             )
+        }
+
+        val recent = remember(sleep) { sleep.take(14) }
+        val regularity = remember(recent) { SleepSummary.bedtimeRegularity(recent) }
+        if (regularity != null) {
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                shape = RoundedCornerShape(24.dp),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("入睡时间规律性", style = MaterialTheme.typography.titleMedium)
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        StatItem("平均入睡", SleepSummary.formatBedtime(regularity.averageMinutes))
+                        StatItem("波动", "±${regularity.stdMinutes} 分钟")
+                        StatItem("评价", SleepSummary.regularityLabel(regularity.stdMinutes))
+                    }
+                    val values = remember(recent) {
+                        recent.reversed().map { SleepSummary.bedtimeMinutes(it).toFloat() }
+                    }
+                    if (values.size >= 2) {
+                        DottedLine(values, Modifier.fillMaxWidth().height(48.dp), MaterialTheme.colorScheme.primary)
+                    }
+                    Text("近 ${regularity.nights} 晚", style = MaterialTheme.typography.labelSmall)
+                }
+            }
         }
 
         Surface(
