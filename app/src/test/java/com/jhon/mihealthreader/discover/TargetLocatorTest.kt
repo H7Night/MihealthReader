@@ -1,17 +1,19 @@
 package com.jhon.mihealthreader.discover
 
-import com.jhon.mihealthreader.root.RootShell
+import com.jhon.mihealthreader.root.PrivilegedShell
 import com.jhon.mihealthreader.root.ShellOutput
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.io.ByteArrayInputStream
+import java.io.InputStream
 
 @RunWith(RobolectricTestRunner::class)
 class TargetLocatorTest {
 
-    private fun shellReturning(dirExistsFor: Set<String>) = object : RootShell {
+    private fun shellReturning(dirExistsFor: Set<String>) = object : PrivilegedShell {
         override fun run(vararg commands: String): ShellOutput {
             val path = commands[1]
             val pkg = path.removePrefix("/data/data/").removeSuffix("/databases")
@@ -25,6 +27,10 @@ class TargetLocatorTest {
                 ShellOutput(1, emptyList(), listOf("find: No such file or directory"))
             }
         }
+
+        override fun openFile(path: String): InputStream = ByteArrayInputStream(ByteArray(0))
+
+        override fun isGranted(): Boolean = true
     }
 
     @Test

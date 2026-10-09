@@ -12,7 +12,7 @@ import com.jhon.mihealthreader.extract.Snapshot
 import com.jhon.mihealthreader.local.LocalStore
 import com.jhon.mihealthreader.local.MiHealthDatabase
 import com.jhon.mihealthreader.parse.StepSample
-import com.jhon.mihealthreader.root.RootShell
+import com.jhon.mihealthreader.root.PrivilegedShell
 import com.jhon.mihealthreader.root.ShellOutput
 import androidx.room.Room
 import kotlinx.coroutines.Dispatchers
@@ -32,7 +32,9 @@ import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
+import java.io.ByteArrayInputStream
 import java.io.File
+import java.io.InputStream
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -61,13 +63,17 @@ class ExtractionViewModelTest {
         db.close()
     }
 
-    private fun granted() = object : RootShell {
+    private fun granted() = object : PrivilegedShell {
         override fun run(vararg commands: String) =
             ShellOutput(0, listOf("uid=0(root) gid=0(root)"), emptyList())
+
+        override fun openFile(path: String): InputStream = ByteArrayInputStream(ByteArray(0))
+
+        override fun isGranted(): Boolean = true
     }
 
     private fun viewModel(
-        root: RootShell,
+        root: PrivilegedShell,
         finder: TargetFinder,
         extractor: Extractor,
         dumper: Dumper,
@@ -89,8 +95,10 @@ class ExtractionViewModelTest {
     @Test
     fun `errors when root denied`() = runTest(main) {
         val vm = viewModel(
-            object : RootShell {
+            object : PrivilegedShell {
                 override fun run(vararg commands: String) = ShellOutput(1, emptyList(), listOf("denied"))
+                override fun openFile(path: String): InputStream = ByteArrayInputStream(ByteArray(0))
+                override fun isGranted(): Boolean = false
             },
             { emptyList() },
             { _, _ -> error("extractor should not run") },

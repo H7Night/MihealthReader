@@ -1,7 +1,7 @@
 package com.jhon.mihealthreader.discover
 
 import android.util.Log
-import com.jhon.mihealthreader.root.RootShell
+import com.jhon.mihealthreader.root.PrivilegedShell
 
 data class TargetApp(
     val packageName: String,
@@ -14,7 +14,7 @@ fun interface TargetFinder {
 }
 
 class TargetLocator(
-    private val rootShell: RootShell,
+    private val rootShell: PrivilegedShell,
     private val scanner: PackageScanner,
     private val priority: List<String> = DEFAULT_PRIORITY,
 ) : TargetFinder {

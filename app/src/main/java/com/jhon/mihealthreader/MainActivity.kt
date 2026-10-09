@@ -12,7 +12,7 @@ import com.jhon.mihealthreader.discover.TargetLocator
 import com.jhon.mihealthreader.dump.DbDumper
 import com.jhon.mihealthreader.dump.ManifestWriter
 import com.jhon.mihealthreader.extract.DbExtractor
-import com.jhon.mihealthreader.extract.SuSourceReader
+import com.jhon.mihealthreader.extract.SourceReader
 import com.jhon.mihealthreader.local.LocalStore
 import com.jhon.mihealthreader.local.MiHealthDatabase
 import com.jhon.mihealthreader.root.LibsuRootShell
@@ -35,7 +35,7 @@ class MainActivity : ComponentActivity() {
         val extractionViewModel = ExtractionViewModel(
             rootShell = shell,
             targetFinder = TargetLocator(shell, scanner),
-            extractor = DbExtractor(SuSourceReader()),
+            extractor = DbExtractor(SourceReader { path -> shell.openFile(path) }),
             dumper = DbDumper(),
             manifestWriter = ManifestWriter(),
             repository = repository,

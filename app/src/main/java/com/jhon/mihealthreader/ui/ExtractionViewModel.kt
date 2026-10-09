@@ -11,7 +11,7 @@ import com.jhon.mihealthreader.extract.Extractor
 import com.jhon.mihealthreader.local.LocalStore
 import com.jhon.mihealthreader.local.LocalSummary
 import com.jhon.mihealthreader.parse.Normalizer
-import com.jhon.mihealthreader.root.RootShell
+import com.jhon.mihealthreader.root.PrivilegedShell
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,7 +22,7 @@ import java.io.File
 import java.time.Instant
 
 class ExtractionViewModel(
-    private val rootShell: RootShell,
+    private val rootShell: PrivilegedShell,
     private val targetFinder: TargetFinder,
     private val extractor: Extractor,
     private val dumper: Dumper,
@@ -49,7 +49,7 @@ class ExtractionViewModel(
 
     init {
         viewModelScope.launch(io) {
-            _rootGranted.value = rootShell.isRootGranted()
+            _rootGranted.value = rootShell.isGranted()
             _summary.value = localStore.summary()
         }
     }
@@ -60,7 +60,7 @@ class ExtractionViewModel(
         viewModelScope.launch(io) {
             try {
                 _state.value = ExtractionState.Running("检测 root 权限")
-                if (!rootShell.isRootGranted()) {
+                if (!rootShell.isGranted()) {
                     _state.value = ExtractionState.Error("root 权限被拒绝，请授予后重试")
                     return@launch
                 }
