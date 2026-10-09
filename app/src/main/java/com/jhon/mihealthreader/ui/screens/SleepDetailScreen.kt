@@ -112,7 +112,7 @@ fun SleepDetailScreen(
             )
         }
 
-        val recent = remember(sleep) { sleep.take(14) }
+        val recent = remember(sleep) { sleep.filter { SleepSummary.isNightSleep(it) }.take(14) }
         val regularity = remember(recent) { SleepSummary.bedtimeRegularity(recent) }
         if (regularity != null) {
             Surface(

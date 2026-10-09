@@ -70,4 +70,12 @@ class SleepSummaryTest {
         assertEquals("较规律", SleepSummary.regularityLabel(45))
         assertEquals("不规律", SleepSummary.regularityLabel(90))
     }
+
+    @Test
+    fun `night sleep excludes daytime naps`() {
+        val night = session().copy(start = 23 * 3600)
+        val nap = session().copy(start = 13 * 3600)
+        assertTrue(SleepSummary.isNightSleep(night, zone))
+        assertTrue(!SleepSummary.isNightSleep(nap, zone))
+    }
 }

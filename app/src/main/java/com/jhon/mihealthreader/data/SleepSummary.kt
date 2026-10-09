@@ -50,6 +50,10 @@ object SleepSummary {
         else -> "不规律"
     }
 
+    /** Bedtime falls in the evening/night window 18:00-06:00 (excludes daytime naps). */
+    fun isNightSleep(session: SleepSession, zone: ZoneId = ZoneId.systemDefault()): Boolean =
+        bedtimeMinutes(session, zone) < 720
+
     fun describe(session: SleepSession, zone: ZoneId = ZoneId.systemDefault()): String {
         val deepPct = deepRatioPct(session)
         val quality = when {
