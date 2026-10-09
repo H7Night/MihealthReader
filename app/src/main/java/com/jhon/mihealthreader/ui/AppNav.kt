@@ -89,7 +89,7 @@ fun AppNav(
             }
 
             composable(Routes.CHARTS) {
-                ChartsScreen()
+                ChartsScreen(parsedRepository = parsedRepository)
             }
 
             composable(Routes.SETTINGS) {
