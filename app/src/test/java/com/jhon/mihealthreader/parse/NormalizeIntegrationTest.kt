@@ -49,6 +49,17 @@ class NormalizeIntegrationTest {
     }
 
     @Test
+    fun `removes generated shm after normalizing`() {
+        val root = fixtureSnapshot()
+        val fitnessData = File(root, "raw/com.mi.health/databases/123/cn/fitness_data")
+        val shm = File(fitnessData.path + "-shm").apply { writeText("stale") }
+
+        Normalizer().normalize(root, generatedAt = "2026-01-01T00:00:00Z")
+
+        assertTrue(!shm.exists())
+    }
+
+    @Test
     fun `writes empty envelope when fitness_data missing`() {
         val root = tmp.root
         val result = Normalizer().normalize(root, generatedAt = "2026-01-01T00:00:00Z")

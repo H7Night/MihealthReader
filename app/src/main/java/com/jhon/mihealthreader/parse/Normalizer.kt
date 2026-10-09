@@ -23,6 +23,7 @@ class Normalizer {
                 }.getOrDefault(emptyList())
             } finally {
                 db.close()
+                SqliteSupport.removeStaleShm(fitnessData)
             }
         }
 

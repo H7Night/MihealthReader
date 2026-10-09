@@ -65,6 +65,7 @@ class DbDumper(private val rowLimit: Int = Int.MAX_VALUE) : Dumper {
             return DbDumpResult(dbName, isSqlite = true, tables = tables, error = e.message ?: e.toString())
         } finally {
             db?.close()
+            SqliteSupport.removeStaleShm(dbFile)
         }
         return DbDumpResult(dbName, isSqlite = true, tables = tables)
     }
