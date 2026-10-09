@@ -3,6 +3,7 @@ package com.jhon.mihealthreader.ui.charts
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -68,5 +69,45 @@ fun StackedBarChart(rows: List<List<StackSegment>>, modifier: Modifier) {
                 }
             }
         }
+    }
+}
+
+/** Rounded "capsule" bars anchored to the bottom (Google Health style). */
+@Composable
+fun CapsuleBars(values: List<Float>, modifier: Modifier, color: Color) {
+    Canvas(modifier) {
+        if (values.isEmpty()) return@Canvas
+        val maxV = values.max().takeIf { it > 0f } ?: 1f
+        val gap = size.width * 0.035f
+        val barWidth = (size.width - gap * (values.size - 1)) / values.size
+        val radius = barWidth / 2f
+        values.forEachIndexed { i, v ->
+            val barHeight = ((v / maxV) * size.height).coerceAtLeast(barWidth)
+            drawRoundRect(
+                color = color,
+                topLeft = Offset(i * (barWidth + gap), size.height - barHeight),
+                size = Size(barWidth, barHeight),
+                cornerRadius = CornerRadius(radius, radius),
+            )
+        }
+    }
+}
+
+/** Dots connected by lines (Google Health style). */
+@Composable
+fun DottedLine(values: List<Float>, modifier: Modifier, color: Color) {
+    Canvas(modifier) {
+        if (values.size < 2) return@Canvas
+        val maxV = values.max()
+        val minV = values.min()
+        val range = (maxV - minV).takeIf { it > 0f } ?: 1f
+        val stepX = size.width / (values.size - 1)
+        val points = values.mapIndexed { i, v ->
+            Offset(stepX * i, size.height - ((v - minV) / range) * size.height)
+        }
+        for (i in 0 until points.size - 1) {
+            drawLine(color, points[i], points[i + 1], strokeWidth = 2.dp.toPx())
+        }
+        points.forEach { drawCircle(color, radius = 3.dp.toPx(), center = it) }
     }
 }
