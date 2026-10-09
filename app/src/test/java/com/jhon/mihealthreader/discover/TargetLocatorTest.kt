@@ -1,0 +1,61 @@
+package com.jhon.mihealthreader.discover
+
+import com.jhon.mihealthreader.root.RootShell
+import com.jhon.mihealthreader.root.ShellOutput
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.junit.runners.JUnit4
+
+@RunWith(JUnit4::class)
+class TargetLocatorTest {
+
+    private fun shellReturning(dirExistsFor: Set<String>) = object : RootShell {
+        override fun run(vararg commands: String): ShellOutput {
+            val path = commands.last()
+            val pkg = path.removePrefix("/data/data/").removeSuffix("/databases")
+            return if (pkg in dirExistsFor) {
+                ShellOutput(0, listOf("mi.db", "mi.db-wal"), emptyList())
+            } else {
+                ShellOutput(1, emptyList(), listOf("No such file or directory"))
+            }
+        }
+    }
+
+    @Test
+    fun `finds priority package with databases`() {
+        val locator = TargetLocator(shellReturning(setOf("com.xiaomi.wearable")), { emptyList() })
+        val result = locator.findCandidates()
+        assertEquals(listOf("com.xiaomi.wearable"), result.map { it.packageName })
+        assertEquals(listOf("mi.db", "mi.db-wal"), result.first().dbFiles)
+        assertEquals("/data/data/com.xiaomi.wearable/databases", result.first().databasesPath)
+    }
+
+    @Test
+    fun `finds installed package by name hint`() {
+        val locator = TargetLocator(
+            shellReturning(setOf("com.acme.health")),
+            { listOf("com.acme.health", "com.other.app") }
+        )
+        assertEquals(listOf("com.acme.health"), locator.findCandidates().map { it.packageName })
+    }
+
+    @Test
+    fun `ignores packages without databases dir`() {
+        val locator = TargetLocator(shellReturning(emptySet()), { listOf("com.acme.health") })
+        assertTrue(locator.findCandidates().isEmpty())
+    }
+
+    @Test
+    fun `priority package comes first and dedups`() {
+        val locator = TargetLocator(
+            shellReturning(setOf("com.xiaomi.wearable", "com.acme.health")),
+            { listOf("com.xiaomi.wearable", "com.acme.health") }
+        )
+        assertEquals(
+            listOf("com.xiaomi.wearable", "com.acme.health"),
+            locator.findCandidates().map { it.packageName }
+        )
+    }
+}
