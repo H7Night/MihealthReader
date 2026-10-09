@@ -34,6 +34,7 @@ android {
 
     buildFeatures {
         compose = true
+        aidl = true
     }
 
     testOptions {
@@ -60,6 +61,8 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.libsu.core)
     implementation(libs.libsu.io)
+    implementation(libs.shizuku.api)
+    implementation(libs.shizuku.provider)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)

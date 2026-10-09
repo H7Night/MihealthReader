@@ -26,4 +26,14 @@ class PrivilegedShellTest {
         assertFalse(outputIndicatesRoot(ShellOutput(0, listOf("uid=2000(shell) gid=2000(shell)"), emptyList())))
         assertFalse(outputIndicatesRoot(ShellOutput(1, emptyList(), listOf("permission denied"))))
     }
+
+    @Test
+    fun `shizuku granted requires ping, permission and root id`() {
+        val rootId = ShellOutput(0, listOf("uid=0(root)"), emptyList())
+        val shellId = ShellOutput(0, listOf("uid=2000(shell)"), emptyList())
+        assertTrue(shizukuGranted(ping = true, permissionGranted = true, id = rootId))
+        assertFalse(shizukuGranted(ping = false, permissionGranted = true, id = rootId))
+        assertFalse(shizukuGranted(ping = true, permissionGranted = false, id = rootId))
+        assertFalse(shizukuGranted(ping = true, permissionGranted = true, id = shellId))
+    }
 }
