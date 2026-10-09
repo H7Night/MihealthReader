@@ -32,6 +32,7 @@ import java.time.YearMonth
 fun ChartsScreen(
     parsedRepository: ParsedRepository,
     onOpenSleepDetail: () -> Unit,
+    onOpenWorkoutList: () -> Unit,
 ) {
     var metric by remember { mutableStateOf(Metric.STEPS) }
     var yearMonth by remember { mutableStateOf(YearMonth.now()) }
@@ -76,6 +77,12 @@ fun ChartsScreen(
                 onClick = onOpenSleepDetail,
                 modifier = Modifier.padding(top = 12.dp),
             ) { Text("查看每晚睡眠详情") }
+        }
+        if (metric == Metric.WORKOUT) {
+            Button(
+                onClick = onOpenWorkoutList,
+                modifier = Modifier.padding(top = 12.dp),
+            ) { Text("查看运动列表") }
         }
     }
 }

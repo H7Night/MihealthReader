@@ -35,6 +35,8 @@ import com.jhon.mihealthreader.ui.screens.MetricDetailScreen
 import com.jhon.mihealthreader.ui.screens.SettingsScreen
 import com.jhon.mihealthreader.ui.screens.SleepDetailScreen
 import com.jhon.mihealthreader.ui.screens.TodayScreen
+import com.jhon.mihealthreader.ui.screens.WorkoutDetailScreen
+import com.jhon.mihealthreader.ui.screens.WorkoutListScreen
 import java.io.File
 
 @Composable
@@ -90,10 +92,10 @@ fun AppNav(
                     summary = summary,
                     dataLoaded = dataLoaded,
                     onOpenDetail = { metric ->
-                        if (metric == Metric.SLEEP) {
-                            navController.navigate("sleep_detail")
-                        } else {
-                            navController.navigate("detail/${metric.name}")
+                        when (metric) {
+                            Metric.SLEEP -> navController.navigate("sleep_detail")
+                            Metric.WORKOUT -> navController.navigate("workout_list")
+                            else -> navController.navigate("detail/${metric.name}")
                         }
                     },
                     onGoSettings = { navController.navigateSingleTop(Routes.SETTINGS) },
@@ -104,12 +106,30 @@ fun AppNav(
                 ChartsScreen(
                     parsedRepository = parsedRepository,
                     onOpenSleepDetail = { navController.navigate("sleep_detail") },
+                    onOpenWorkoutList = { navController.navigate("workout_list") },
                 )
             }
 
             composable("sleep_detail") {
                 SleepDetailScreen(
                     parsedRepository = parsedRepository,
+                    onBack = { navController.popBackStack() },
+                )
+            }
+
+            composable("workout_list") {
+                WorkoutListScreen(
+                    parsedRepository = parsedRepository,
+                    onOpen = { navController.navigate("workout_detail/$it") },
+                    onBack = { navController.popBackStack() },
+                )
+            }
+
+            composable("workout_detail/{index}") { entry ->
+                val index = entry.arguments?.getString("index")?.toIntOrNull() ?: 0
+                WorkoutDetailScreen(
+                    parsedRepository = parsedRepository,
+                    index = index,
                     onBack = { navController.popBackStack() },
                 )
             }
