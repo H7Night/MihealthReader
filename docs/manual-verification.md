@@ -67,3 +67,12 @@ adb exec-out run-as com.jhon.mihealthreader tar -c files/exports | tar -x
 - 睡眠：`fitness_data.sleep_segment`（`value` 字段内嵌 JSON，含 `items[].state`/`start_time`/`end_time`、`sleep_deep_duration` 等）。
 - 步数：`fitness_data.step_record`（`value` 内嵌 `{time,steps,distance,calories}`）。
 - 日汇总：`fitness_summary.daily_report`。
+
+## 7. 阶段 2 实际结果（2026-10-09，通过）
+
+- 规范化输出：`<快照>/parsed/normalized.json`（信封 `schema_version=1.0`、`source=mihealthreader`）。
+- 结果量级：**睡眠 96 段**、**活动 64 天**（2026-04-02 → 2026-10-09，总步数 342,214）。
+- 睡眠阶段码经真机校准：`2=deep(深睡)`、`3=light(浅睡)`、`5=awake(清醒)`；与源库自带
+  `sleep_deep_duration`/`sleep_light_duration` 分钟数完全一致（例：某会话深睡合计 132m、浅睡 421m）。
+- 步数按本地日聚合，并做分钟切片去重（同分钟取较大 `steps`）。
+- 界面：活动视图（64 天列表 + 最近一天汇总）、睡眠视图（96 段 + 阶段时间线）均真机渲染正常。
