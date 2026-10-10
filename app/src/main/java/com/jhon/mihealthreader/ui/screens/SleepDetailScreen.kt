@@ -45,7 +45,9 @@ fun SleepDetailScreen(
     onBack: () -> Unit,
 ) {
     val sleep by parsedRepository.sleepSessions().collectAsState(initial = emptyList())
-    var index by remember { mutableStateOf(0) }
+    val main = remember(sleep) { SleepSummary.mainSleep(sleep) }
+    val mainIndex = remember(sleep, main) { sleep.indexOfFirst { it === main }.coerceAtLeast(0) }
+    var index by remember(sleep) { mutableStateOf(mainIndex) }
     val session = sleep.getOrNull(index)
 
     val deepColor = MaterialTheme.colorScheme.primary
@@ -96,6 +98,15 @@ fun SleepDetailScreen(
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     StatItem("深度睡眠比率", "${SleepSummary.deepRatioPct(session)}%")
                     StatItem("清醒次数", "${SleepSummary.awakeCount(session)} 次")
+                }
+                val dayNaps = remember(sleep, session) {
+                    SleepSummary.napsOnDay(sleep, SleepSummary.endDate(session))
+                }
+                if (dayNaps.isNotEmpty()) {
+                    Text(
+                        "含午睡 ${dayNaps.sumOf { it.durationMinutes }} 分钟（${dayNaps.size} 次）",
+                        style = MaterialTheme.typography.labelMedium,
+                    )
                 }
             }
         }

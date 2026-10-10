@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.jhon.mihealthreader.data.ChartData
 import com.jhon.mihealthreader.data.ParsedRepository
+import com.jhon.mihealthreader.data.SleepSummary
 import com.jhon.mihealthreader.local.LocalSummary
 import com.jhon.mihealthreader.ui.Metric
 import com.jhon.mihealthreader.ui.charts.CapsuleBars
@@ -58,7 +59,9 @@ fun TodayScreen(
     val today = LocalDate.now().toString()
     val todayActivity = activity.firstOrNull()
     val todayWorkouts = workouts.filter { localDate(it.start) == today }
-    val latestSleep = sleep.firstOrNull()
+    val mainSleep = remember(sleep) { SleepSummary.mainSleep(sleep) }
+    val naps = remember(sleep) { SleepSummary.sameDayNaps(sleep) }
+    val napMinutes = naps.sumOf { it.durationMinutes }
     val latestHeart = heart.firstOrNull()
     val latestSpo2 = spo2.firstOrNull()
     val latestBody = body.firstOrNull()
@@ -115,9 +118,13 @@ fun TodayScreen(
             item {
                 MetricGridCard(
                     title = "睡眠",
-                    value = latestSleep?.let { formatMinutes(it.durationMinutes) } ?: "—",
+                    value = mainSleep?.let { formatMinutes(it.durationMinutes + napMinutes) } ?: "—",
                     unit = null,
-                    status = latestSleep?.let { "深睡 ${it.deepMinutes}m" },
+                    status = when {
+                        mainSleep == null -> null
+                        naps.isEmpty() -> "深睡 ${mainSleep.deepMinutes}m"
+                        else -> "含午睡 ${napMinutes}m"
+                    },
                     onClick = { onOpenDetail(Metric.SLEEP) },
                     mini = { CapsuleBars(sleep7, Modifier.fillMaxWidth().height(44.dp), tertiary) },
                 )

@@ -5,6 +5,7 @@ import com.jhon.mihealthreader.parse.SleepStage
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.LocalDate
 import java.time.ZoneId
 
 class SleepSummaryTest {
@@ -77,5 +78,19 @@ class SleepSummaryTest {
         val nap = session().copy(start = 13 * 3600)
         assertTrue(SleepSummary.isNightSleep(night, zone))
         assertTrue(!SleepSummary.isNightSleep(nap, zone))
+    }
+
+    @Test
+    fun `main sleep ignores a later nap`() {
+        // night sleep 2026-10-08 23:00 -> 2026-10-09 07:00
+        val nightStart = LocalDate.of(2026, 10, 8).atStartOfDay(zone).toEpochSecond() + 23 * 3600
+        val night = SleepSession(nightStart, nightStart + 8 * 3600, 480, 120, 340, 50, 45, 60, emptyList())
+        // nap 2026-10-09 13:00 (later start, shorter)
+        val napStart = LocalDate.of(2026, 10, 9).atStartOfDay(zone).toEpochSecond() + 13 * 3600
+        val nap = SleepSession(napStart, napStart + 30 * 60, 30, 5, 25, 60, 55, 70, emptyList())
+
+        val main = SleepSummary.mainSleep(listOf(nap, night), zone)!!
+        assertEquals(480, main.durationMinutes)
+        assertEquals(listOf(nap), SleepSummary.sameDayNaps(listOf(nap, night), zone))
     }
 }

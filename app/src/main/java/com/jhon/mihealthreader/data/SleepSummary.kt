@@ -54,6 +54,28 @@ object SleepSummary {
     fun isNightSleep(session: SleepSession, zone: ZoneId = ZoneId.systemDefault()): Boolean =
         bedtimeMinutes(session, zone) < 720
 
+    fun endDate(session: SleepSession, zone: ZoneId = ZoneId.systemDefault()): String =
+        Instant.ofEpochSecond(session.end).atZone(zone).toLocalDate().toString()
+
+    /** The main sleep: the longest night sleep, falling back to the longest overall. */
+    fun mainSleep(sessions: List<SleepSession>, zone: ZoneId = ZoneId.systemDefault()): SleepSession? =
+        sessions.filter { isNightSleep(it, zone) }.maxByOrNull { it.durationMinutes }
+            ?: sessions.maxByOrNull { it.durationMinutes }
+
+    /** Daytime naps on the same wake-date as the main sleep. */
+    fun sameDayNaps(sessions: List<SleepSession>, zone: ZoneId = ZoneId.systemDefault()): List<SleepSession> {
+        val main = mainSleep(sessions, zone) ?: return emptyList()
+        return napsOnDay(sessions, endDate(main, zone), zone)
+    }
+
+    /** Daytime naps whose wake-date equals [day]. */
+    fun napsOnDay(
+        sessions: List<SleepSession>,
+        day: String,
+        zone: ZoneId = ZoneId.systemDefault(),
+    ): List<SleepSession> =
+        sessions.filter { !isNightSleep(it, zone) && endDate(it, zone) == day }
+
     fun interpret(session: SleepSession): String {
         val deepPct = deepRatioPct(session)
         return when {
