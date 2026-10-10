@@ -3,13 +3,11 @@ package com.jhon.mihealthreader.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -219,19 +217,14 @@ private fun StatItem(label: String, value: String) {
 @Composable
 private fun HypnogramAxis(sessions: List<SleepSession>) {
     if (sessions.isEmpty()) return
-    val start = sessions.minOf { it.start }
-    val end = sessions.maxOf { it.end }
-    val span = (end - start).coerceAtLeast(1L)
-    BoxWithConstraints(modifier = Modifier.fillMaxWidth().height(38.dp)) {
-        val width = maxWidth
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
         sessions.forEach { s ->
-            val sx = width * ((s.start - start).toFloat() / span)
-            val ex = width * ((s.end - start).toFloat() / span)
-            Column(modifier = Modifier.offset(x = sx)) {
+            Column {
                 Text(SleepSummary.hhmm(s.start), style = MaterialTheme.typography.labelSmall)
                 Text("入睡", style = MaterialTheme.typography.labelSmall)
-            }
-            Column(modifier = Modifier.offset(x = (ex - 30.dp).coerceAtLeast(0.dp))) {
                 Text(SleepSummary.hhmm(s.end), style = MaterialTheme.typography.labelSmall)
                 Text("清醒", style = MaterialTheme.typography.labelSmall)
             }
