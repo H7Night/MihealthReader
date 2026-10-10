@@ -3,11 +3,13 @@ package com.jhon.mihealthreader.ui.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -123,6 +125,23 @@ fun SleepDetailScreen(
             }
         }
 
+        val day = SleepSummary.endDate(session)
+        val daySessions = remember(sleep, day) {
+            SleepSummary.daySessions(sleep, day).sortedBy { it.start }
+        }
+        val dayTotal = daySessions.sumOf { it.durationMinutes }
+        val napColor = MaterialTheme.colorScheme.secondaryContainer
+        val hasNap = remember(daySessions) { daySessions.any { !SleepSummary.isNightSleep(it) } }
+        val segments = remember(daySessions) {
+            daySessions.flatMap { s ->
+                if (s.stages.isNotEmpty()) {
+                    s.stages.map { HypnoSegment(it.start, it.end, it.stateName) }
+                } else {
+                    listOf(HypnoSegment(s.start, s.end, "nap"))
+                }
+            }
+        }
+
         Surface(
             color = MaterialTheme.colorScheme.surfaceVariant,
             shape = RoundedCornerShape(24.dp),
@@ -130,24 +149,23 @@ fun SleepDetailScreen(
         ) {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("全天睡眠", style = MaterialTheme.typography.titleMedium)
-                Text(formatMinutesCn(session.durationMinutes), style = MaterialTheme.typography.headlineMedium)
+                Text(formatMinutesCn(dayTotal), style = MaterialTheme.typography.headlineMedium)
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     LegendDot(deepColor, "深睡")
                     LegendDot(lightColor, "浅睡")
                     LegendDot(awakeColor, "清醒")
+                    if (hasNap) LegendDot(napColor, "午睡")
                 }
-                if (session.stages.isNotEmpty()) {
+                if (segments.isNotEmpty()) {
                     Hypnogram(
-                        segments = session.stages.map { HypnoSegment(it.start, it.end, it.stateName) },
+                        segments = segments,
                         modifier = Modifier.fillMaxWidth().height(120.dp),
                         deepColor = deepColor,
                         lightColor = lightColor,
                         awakeColor = awakeColor,
+                        napColor = napColor,
                     )
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(SleepSummary.hhmm(session.start), style = MaterialTheme.typography.labelSmall)
-                        Text(SleepSummary.hhmm(session.end), style = MaterialTheme.typography.labelSmall)
-                    }
+                    HypnogramAxis(daySessions)
                 } else {
                     Text("无阶段数据")
                 }
@@ -195,6 +213,31 @@ private fun StatItem(label: String, value: String) {
     Column {
         Text(label, style = MaterialTheme.typography.labelMedium)
         Text(value, style = MaterialTheme.typography.titleMedium)
+    }
+}
+
+@Composable
+private fun HypnogramAxis(sessions: List<SleepSession>) {
+    if (sessions.isEmpty()) return
+    val start = sessions.minOf { it.start }
+    val end = sessions.maxOf { it.end }
+    val span = (end - start).coerceAtLeast(1L)
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth().height(32.dp)) {
+        val width = maxWidth
+        sessions.forEach { s ->
+            val sx = width * ((s.start - start).toFloat() / span)
+            val ex = width * ((s.end - start).toFloat() / span)
+            Text(
+                "${SleepSummary.hhmm(s.start)} 入睡",
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.offset(x = sx),
+            )
+            Text(
+                "${SleepSummary.hhmm(s.end)} 清醒",
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.offset(x = (ex - 64.dp).coerceAtLeast(0.dp)),
+            )
+        }
     }
 }
 

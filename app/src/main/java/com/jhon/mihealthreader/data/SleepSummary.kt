@@ -57,10 +57,22 @@ object SleepSummary {
     fun endDate(session: SleepSession, zone: ZoneId = ZoneId.systemDefault()): String =
         Instant.ofEpochSecond(session.end).atZone(zone).toLocalDate().toString()
 
-    /** The main sleep: the longest night sleep, falling back to the longest overall. */
-    fun mainSleep(sessions: List<SleepSession>, zone: ZoneId = ZoneId.systemDefault()): SleepSession? =
-        sessions.filter { isNightSleep(it, zone) }.maxByOrNull { it.durationMinutes }
-            ?: sessions.maxByOrNull { it.durationMinutes }
+    fun latestDay(sessions: List<SleepSession>, zone: ZoneId = ZoneId.systemDefault()): String? =
+        sessions.maxOfOrNull { endDate(it, zone) }
+
+    fun daySessions(
+        sessions: List<SleepSession>,
+        day: String,
+        zone: ZoneId = ZoneId.systemDefault(),
+    ): List<SleepSession> = sessions.filter { endDate(it, zone) == day }
+
+    /** The main sleep of the latest day: its longest night sleep, falling back to the longest. */
+    fun mainSleep(sessions: List<SleepSession>, zone: ZoneId = ZoneId.systemDefault()): SleepSession? {
+        val day = latestDay(sessions, zone) ?: return null
+        val dayList = daySessions(sessions, day, zone)
+        return dayList.filter { isNightSleep(it, zone) }.maxByOrNull { it.durationMinutes }
+            ?: dayList.maxByOrNull { it.durationMinutes }
+    }
 
     /** Daytime naps on the same wake-date as the main sleep. */
     fun sameDayNaps(sessions: List<SleepSession>, zone: ZoneId = ZoneId.systemDefault()): List<SleepSession> {

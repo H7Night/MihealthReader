@@ -22,6 +22,7 @@ fun Hypnogram(
     deepColor: Color,
     lightColor: Color,
     awakeColor: Color,
+    napColor: Color,
 ) {
     Canvas(modifier) {
         if (segments.isEmpty()) return@Canvas
@@ -48,12 +49,14 @@ fun Hypnogram(
                 "deep" -> 0.35f
                 "light" -> 0.6f
                 "awake" -> 1f
+                "nap" -> 0.6f
                 else -> 0.45f
             }
             val color = when (segment.stateName) {
                 "deep" -> deepColor
                 "light" -> lightColor
                 "awake" -> awakeColor
+                "nap" -> napColor
                 else -> lightColor
             }
             val barHeight = level * size.height
