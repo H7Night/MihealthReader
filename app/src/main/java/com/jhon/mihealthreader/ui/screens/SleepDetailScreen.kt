@@ -222,21 +222,19 @@ private fun HypnogramAxis(sessions: List<SleepSession>) {
     val start = sessions.minOf { it.start }
     val end = sessions.maxOf { it.end }
     val span = (end - start).coerceAtLeast(1L)
-    BoxWithConstraints(modifier = Modifier.fillMaxWidth().height(32.dp)) {
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth().height(38.dp)) {
         val width = maxWidth
         sessions.forEach { s ->
             val sx = width * ((s.start - start).toFloat() / span)
             val ex = width * ((s.end - start).toFloat() / span)
-            Text(
-                "${SleepSummary.hhmm(s.start)} 入睡",
-                style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier.offset(x = sx),
-            )
-            Text(
-                "${SleepSummary.hhmm(s.end)} 清醒",
-                style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier.offset(x = (ex - 64.dp).coerceAtLeast(0.dp)),
-            )
+            Column(modifier = Modifier.offset(x = sx)) {
+                Text(SleepSummary.hhmm(s.start), style = MaterialTheme.typography.labelSmall)
+                Text("入睡", style = MaterialTheme.typography.labelSmall)
+            }
+            Column(modifier = Modifier.offset(x = (ex - 30.dp).coerceAtLeast(0.dp))) {
+                Text(SleepSummary.hhmm(s.end), style = MaterialTheme.typography.labelSmall)
+                Text("清醒", style = MaterialTheme.typography.labelSmall)
+            }
         }
     }
 }
