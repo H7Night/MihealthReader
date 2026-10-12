@@ -1,10 +1,50 @@
-*.iml
+# Gradle
 .gradle/
-/local.properties
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/**/build/
+
+# Local configuration (contains the SDK path)
+local.properties
+
+# Android Studio / IntelliJ
+*.iml
 .idea/
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+.cxx/
+.externalNativeBuild/
+captures/
+.navigation/
+
+# Android build outputs
 app/build/
+/app/release/
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+output.json
+
+# Keystores / signing secrets
+*.jks
+*.keystore
+keystore.properties
+signing.properties
+
+# Kotlin
+.kotlin/
+*.hprof
+
+# Native
+obj/
+*.so
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local / scratch
+/tmp/
