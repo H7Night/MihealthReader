@@ -16,7 +16,7 @@ import androidx.room.RoomDatabase
         BodyMeasurementEntity::class,
     ],
     version = 2,
-    exportSchema = false,
+    exportSchema = true,
 )
 abstract class MiHealthDatabase : RoomDatabase() {
     abstract fun stepSampleDao(): StepSampleDao
@@ -29,7 +29,7 @@ abstract class MiHealthDatabase : RoomDatabase() {
     companion object {
         fun build(context: Context): MiHealthDatabase =
             Room.databaseBuilder(context, MiHealthDatabase::class.java, "mihealth.db")
-                .fallbackToDestructiveMigration()
+                .addMigrations(*ALL_MIGRATIONS)
                 .build()
     }
 }
