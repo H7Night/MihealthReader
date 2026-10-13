@@ -1,8 +1,9 @@
 # MihealthReader 本地存储与增量同步设计（阶段 3）
 
 - 日期：2026-10-09
-- 状态：待实现计划
+- 状态：已实现并真机验证（2026-10-09；记录见 `docs/manual-verification.md` §8）
 - 前置：阶段 1/2 完成并真机验证
+- 实现记录：库升至 **v2**（见 `2026-10-09-mihealthreader-metrics-design.md`），v2 起改为 `exportSchema=true` + 增量迁移，详见 §2/§9
 
 ## 1. 目标与范围
 
@@ -20,7 +21,7 @@
 
 不在本次：更多健康指标（阶段 3+ 扩展）、Health Connect 方案、定时后台提取。
 
-## 2. 本地库设计（Room，`mihealth.db`，version 1）
+## 2. 本地库设计（Room，`mihealth.db`，version 1；v2 见 metrics 设计）
 
 | 表 | 列 | 主键 | 写入策略 |
 | --- | --- | --- | --- |
@@ -34,12 +35,12 @@
 
 ## 3. 解析与入库
 
-- `Normalizer.normalize(snapshotRoot)` 除写 `parsed/normalized.json` 外，**返回解析数据**
+- `Normalizer.normalize(snapshotRoot)` 除写 `parsed/normalized.json` 外，**返回解析数据 `ParsedData`**
   （`sleep: List<SleepSession>`、`samples: List<StepSample>`、`activity: List<DailyActivity>`、`skipped`）。
 - `StepSample` 增加 `sourceId`（来源设备 sid），作为去重键；`ActivityParser.parseSamples` 读取 `sid`。
-- `LocalStore.save(sleep, samples, sourcePackage, at): SaveResult`
-  - 睡眠会话 `REPLACE`；阶段 `IGNORE`；步数样本 `IGNORE`；
-  - `newRecords = 新增阶段数 + 新增样本数`；更新 `sync_state`。
+- `LocalStore.save(data: ParsedData, sourcePackage, at): SaveResult`（Phase 3 起改为接收整包 `ParsedData`）
+  - 睡眠会话/运动/体重 `REPLACE`；阶段/步数样本/点指标 `IGNORE`；
+  - `newRecords` 汇总所有新增（阶段 + 样本 + 点指标 + 运动 + 体重）；更新 `sync_state`。
 - 提取流程（`ExtractionViewModel`）：root → 定位 → 快照 → 通用 JSON → `normalize` → `LocalStore.save` → 刷新摘要。
 - `ExtractionState.Success` 改为报告 `newRecords`（0 时 UI 显示"无新数据"）。
 
@@ -88,5 +89,15 @@
 ## 9. 技术选型
 
 - Room `2.6.1` + KSP（Kotlin `2.0.21` 对应 KSP `2.0.21-1.0.25`）。
-- 数据库文件名 `mihealth.db`；`exportSchema=false`。
+- 数据库文件名 `mihealth.db`；v1 时 `exportSchema=false`。v2 起改为 `exportSchema=true`：
+  schema 导出到 `app/schemas/`，并改用增量迁移（无破坏式回退），详见 metrics 设计 §3。
 - 读取聚合在调用线程完成（数据量小）；后续可迁到 Flow/后台。
+
+## 10. 实现记录
+
+- 已实现并真机验证（`docs/manual-verification.md` §8）：提取一次后入库，杀进程重启**启动即读**，
+  再次提取「无新数据」，增量幂等。
+- 读取后续改为 **Room `Flow`**（`LocalStore.stepSamplesFlow()`/`sleepSessionsFlow()`），避免主线程访问数据库崩溃。
+- `Normalizer.normalize` 返回 `ParsedData`；`LocalStore.save(data: ParsedData, sourcePackage, at)`。
+- 本地库**升至 v2**：`exportSchema=true`，schema 导出到 `app/schemas/…/2.json`；新增 `MIGRATION_1_2`
+  增量迁移，**取消破坏式迁移**（`11c679b`，详见 `docs/manual-verification.md` §22）。

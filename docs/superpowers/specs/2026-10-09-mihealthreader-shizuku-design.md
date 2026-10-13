@@ -1,7 +1,7 @@
 # MihealthReader Shizuku 数据层设计
 
 - 日期：2026-10-09
-- 状态：待实现计划
+- 状态：已实现并真机验证（2026-10-09；记录见 `docs/manual-verification.md` §10）
 - 前置：本地存储与指标解析已完成
 
 ## 1. 目标与范围
@@ -78,3 +78,10 @@ fun buildShellCommand(commands: Array<out String>): String
 ## 9. 后续（本次不做）
 
 导航（今天/视图/设置）、图表（Google Health 风格）、设置页（提取/导出）、正式的数据源设置项。
+
+## 10. 实现记录
+
+- 真机（`shizuku_server` 以 root 运行）：Shizuku 授权后提取成功，root 后端同样正常（`docs/manual-verification.md` §10）。
+- `isGranted()` 要求实际 uid=0，可识别"Shizuku 非 root 启动"。
+- 首页的临时数据源选择后续迁入**设置页**正式数据源设置项（切换后重启生效），见 UI 设计 §5。
+- §9 所列「后续（本次不做）」项均已在 UI 重构阶段完成。

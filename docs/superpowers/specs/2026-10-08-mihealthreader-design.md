@@ -1,8 +1,9 @@
 # MihealthReader 设计文档
 
 - 日期：2026-10-08
-- 状态：已确认，待实现计划
+- 状态：已实现并真机验证（2026-10-09；记录见 `docs/manual-verification.md` §6）
 - 路径：方案一（逆向读取小米运动健康 / Mi Fitness 私有数据库）
+- 实现记录：见本文 §10（含与设计的差异，如调试浏览器后续被移除）
 
 ## 1. 目标与背景
 
@@ -157,3 +158,20 @@ adb exec-out run-as com.jhon.mihealthreader tar -c files/exports | tar -x
   需真机探针确认；设计上通过运行时发现 + 手动兜底降低风险。
 - 手机 Android 版本未知，影响路径与行为。
 - 我无法直接访问该 rooted 手机，逆向探针需由用户在设备上执行并反馈结果。
+
+## 10. 实现记录（与设计的差异）
+
+阶段 1 已于 2026-10-09 在真机完成（`docs/manual-verification.md` §6）：
+
+- **待确认项已解决**：目标包为 **`com.mi.health`**（非 `com.xiaomi.wearable`），数据库为**明文 SQLite 未加密**；
+  真机为 OnePlus 15 / **Android 16（SDK 36）**、root 为 KernelSU。
+- **关键实现差异**：root shell 必须运行在**全局挂载命名空间**，否则看不到其他 App 数据目录；
+  已用 libsu `FLAG_MOUNT_MASTER`（等价 `su --mount-master`）解决（`87a4071`）。
+- 真实健康数据位于嵌套目录 `databases/<账号UID>/cn/{fitness_data,fitness_summary}`，发现逻辑需递归
+  （`d240c63`）。
+- **快照 `-shm` 处理**：抽取时不复制过时 `-shm`，打开副本前删除旧 `-shm`，打开后再清理 SQLite 自动生成的
+  `-shm`，避免 SIGBUS（`5d5c790`、`491f815`）。
+- **调试浏览器后续被移除**：`BrowserViewModel`/`TableListScreen`/`TableDetailScreen`/`ExportRepository`
+  在后续 UI 阶段删除（`493b7b6`）；快照与 `normalized.json` 仍在生成，只是不再有表浏览器入口。
+- **特权通道抽象**：`RootShell` 后续重构为 `PrivilegedShell`，新增 Shizuku 后端（见
+  `2026-10-09-mihealthreader-shizuku-design.md`）。

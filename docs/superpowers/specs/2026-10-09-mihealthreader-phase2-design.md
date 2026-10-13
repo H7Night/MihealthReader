@@ -1,7 +1,7 @@
 # MihealthReader 阶段 2 设计文档（定向解析 + 界面）
 
 - 日期：2026-10-09
-- 状态：待实现计划
+- 状态：已实现并真机验证（2026-10-09；记录见 `docs/manual-verification.md` §7）
 - 前置：阶段 1 已完成并真机验证（见 `2026-10-08-mihealthreader-design.md` 与 `docs/manual-verification.md`）
 
 ## 1. 目标与范围
@@ -84,7 +84,7 @@ com.jhon.mihealthreader.parse
 ├─ ParsedModels.kt   SleepStage/SleepSession/DailyActivity/StepSample
 ├─ SleepParser.kt    parse(db): List<SleepSession>；parseValue(json): SleepSession?（纯函数）
 ├─ ActivityParser.kt parseSamples(db): List<StepSample>；aggregate(samples, dedup): List<DailyActivity>（纯函数）
-└─ Normalizer.kt     normalize(snapshotRoot): NormalizeResult（定位 fitness_data、解析、写 normalized.json）
+└─ Normalizer.kt     normalize(snapshotRoot): ParsedData（定位 fitness_data、解析、写 normalized.json）
 ```
 
 - `Normalizer` 依赖 `Dumper` 邻近的只读 SQLite 打开方式，定位 `fitness_data` 后读取两个表。
@@ -127,3 +127,12 @@ com.jhon.mihealthreader.parse
 - 睡眠阶段码 `1/2/3/4/5` 映射为 awake/deep/light/rem/awake（`1/4` 来自 HCUnlock 交叉验证，`2/3` 由真机 deep/light 字段确认）；输出保留原始 `state` 以兜底。
 - `fitness_summary.daily_report` 可能含官方日汇总，可作日后校验（本次以 `step_record` 聚合为准）。
 - 时区：使用行内 `zoneOffsetInSec` 换算本地日；无该字段时回退设备时区。
+
+## 11. 实现记录（与设计的差异）
+
+- 睡眠阶段码经真机 + HCUnlock 交叉校准并修正：`2=deep`、`3=light`、`5=awake`（`0629847`），
+  随后补全 `1/4/5` 映射（`4093e41`），与源库自带的深睡/浅睡分钟数逐段吻合。
+- `-shm` 处理：抽取不复制过时 `-shm`，打开副本前删除、打开后清理自动生成的 `-shm`（`5d5c790`、`491f815`）。
+- `Normalizer.normalize` 返回值后续由 `NormalizeResult` 改为 `ParsedData`（见本地存储设计 §3）。
+- 阶段 2 的首页导航入口（活动/睡眠/调试）后续被 UI 重构取代（底部导航「今天/视图/设置」，
+  见 `2026-10-09-mihealthreader-ui-design.md`），活动/睡眠改由图表与睡眠详情呈现。

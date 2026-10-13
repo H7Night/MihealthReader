@@ -1,8 +1,9 @@
 # MihealthReader 更多指标设计（Phase 3）
 
 - 日期：2026-10-09
-- 状态：待实现计划
+- 状态：已实现并真机验证（2026-10-09；记录见 `docs/manual-verification.md` §9）
 - 前置：本地存储（`mihealth.db` v1）已完成
+- 实现记录：DB v2 由**破坏式迁移改为增量迁移**（见 §3）
 
 ## 1. 目标与范围
 
@@ -17,7 +18,7 @@
 - `sport_report`：`key`=运动类型；`value` 含 `start_time,end_time,duration,calories,avg_hrm,max_hrm,min_hrm`（`distance` 可选）。
 - `weight_item_record`：独立列 `weight,bmi,bodyFatRate,moistureRate,boneMass,basalMetabolism,muscleMass,proteinRate,visceralFat`；回退 `value` JSON。
 
-## 3. 表结构（DB v2，破坏式迁移）
+## 3. 表结构（DB v2，增量迁移）
 
 **点指标统一表**（单值时间序列，可扩展）：
 
@@ -40,7 +41,15 @@ body_measurement(sourceId TEXT, time INTEGER, weightKg REAL, bmi REAL, bodyFatRa
 ```
 
 - 现有 `step_sample`/`sleep_session`/`sleep_stage` 不变。
-- 数据库 `version = 2`，升级用 `fallbackToDestructiveMigration()`（升级后清空、需重新提取一次）。
+- 数据库 `version = 2`，`exportSchema = true`：schema 导出到
+  `app/schemas/com.jhon.mihealthreader.local.MiHealthDatabase/2.json`（`ksp { arg("room.schemaLocation", ...) }`），
+  作为迁移基线纳入版本控制。
+- 升级用**增量迁移**而非破坏式迁移：`local/Migrations.kt` 的 `MIGRATION_1_2` 只 `CREATE TABLE` 三张新表
+  （`metric_sample`/`workout`/`body_measurement`），`MiHealthDatabase.build` 注册 `addMigrations(*ALL_MIGRATIONS)`，
+  **不调用 `fallbackToDestructiveMigration()`**。理由：快照是用户自己的健康历史，schema 不匹配必须显式失败，
+  不允许静默清空、逼迫重新提取。
+- 迁移 SQL 以 `internal const val` 常量暴露，便于纯 JVM 测试逐条对照生成的 schema；
+  `Migration1To2Test`（Robolectric）断言 v1 数据在迁移后保留、新表可写，且**缺少迁移时打开 v1 库会抛错而非清库**。
 
 ## 4. 领域模型与解析
 

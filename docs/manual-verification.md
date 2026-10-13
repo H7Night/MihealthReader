@@ -205,3 +205,16 @@ adb exec-out run-as com.jhon.mihealthreader tar -c files/exports | tar -x
 - 颜色用 MD3 主题（深睡=primary、浅睡=tertiary、清醒=error）。
 - 真机确认：`9 小时 13 分钟 / 00:17 入睡 / 深睡 23% / 清醒 3 次`，描述与横向睡眠图均正常。
 - 78 个单元测试全绿，`lintDebug`/`assembleDebug` 通过。
+
+## 22. 安全 Room 迁移（2026-10-12，通过）
+
+- 背景：DB v2 原先用 `fallbackToDestructiveMigration()`——schema 不匹配即**清空本地库**、需重新提取。
+- 变更（`11c679b`）：改为**增量迁移** `MIGRATION_1_2`（`local/Migrations.kt`，仅 `CREATE TABLE`
+  `metric_sample`/`workout`/`body_measurement`），`MiHealthDatabase.build` 注册 `addMigrations(*ALL_MIGRATIONS)`，
+  **不再注册破坏式回退**；缺少迁移时必须显式失败，绝不静默丢弃用户的健康历史。
+- 迁移基线：`exportSchema=true`，schema 导出到
+  `app/schemas/com.jhon.mihealthreader.local.MiHealthDatabase/2.json`（纳入版本控制）。
+- 迁移 SQL 以常量暴露，`Migration1To2Test`（Robolectric）验证：
+  - v1 数据（`step_sample`/`sleep_session`/`sync_state`）迁移后**保留**，三张新表可正常写入；
+  - **缺少迁移时打开 v1 库抛 `IllegalStateException`，而非清库**。
+- 交付：运行 `./gradlew :app:testDebugUnitTest`（含 `Migration1To2Test`）。
