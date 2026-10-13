@@ -218,3 +218,15 @@ adb exec-out run-as com.jhon.mihealthreader tar -c files/exports | tar -x
   - v1 数据（`step_sample`/`sleep_session`/`sync_state`）迁移后**保留**，三张新表可正常写入；
   - **缺少迁移时打开 v1 库抛 `IllegalStateException`，而非清库**。
 - 交付：运行 `./gradlew :app:testDebugUnitTest`（含 `Migration1To2Test`）。
+
+## 23. 复测（2026-10-13，通过）
+
+对当前实现做一次完整真机复测（OnePlus 15 / Android 16 / KernelSU）：
+
+- 构建：`./gradlew :app:testDebugUnitTest` **84 项全绿**，`lintDebug`/`assembleDebug` 通过。
+- **增量提取（Shizuku）**：新增 480 条（步数样本 17523→17593、睡眠 332→334）。
+- **幂等**：再次提取显示「无新数据」，计数不变。
+- **Root 数据源**：重启后生效，提取同样「无新数据」，与 Shizuku 后端结果一致。
+- **导出 JSON（SAF）**：写出 `/sdcard/Download/mihealth-normalized.json`（2.18MB），内容校验通过
+  （`schema_version=1.0`；sleep 334、daily_activity 216、heart_rate 25331、resting 132、spo2 2、workouts 62、body_measurements 1）。
+- 界面：今天（启动即读）、视图（按月份图表）、设置、睡眠详情、心率详情 均正常渲染。
