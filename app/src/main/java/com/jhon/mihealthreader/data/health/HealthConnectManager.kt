@@ -26,7 +26,7 @@ import javax.inject.Singleton
  * best-effort: never throws into callers, and is a no-op when Health Connect is absent.
  */
 @Singleton
-class HealthConnectManager @Inject constructor(
+open class HealthConnectManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val localStore: LocalStore,
 ) {
@@ -53,46 +53,52 @@ class HealthConnectManager @Inject constructor(
         return client.permissionController.getGrantedPermissions().containsAll(permissions)
     }
 
-    /** Best-effort write of every stored metric. Returns the number of records written. */
-    suspend fun sync(): Int {
+    /**
+     * Best-effort write of every stored metric. Returns the number of records written.
+     * No-op when Health Connect is absent or the write permissions are not all granted.
+     */
+    open suspend fun sync(): Int {
         val client = client() ?: return 0
-        val records = buildList {
-            addAll(stepsRecords())
-            addAll(heartRateRecords())
-            addAll(restingHeartRateRecords())
-            addAll(spo2Records())
-            addAll(sleepRecords())
-            addAll(workoutRecords())
-        }
+        if (!hasAllPermissions()) return 0
         var written = 0
-        records.chunked(BATCH).forEach { batch ->
-            val ok = runCatching { client.insertRecords(batch) }
-                .onFailure { Log.w(TAG, "Health Connect insert failed", it) }
-                .isSuccess
-            if (ok) written += batch.size
+
+        // Build + insert each metric type in isolation: a bad record in one group must not
+        // drop the others, and every failure is logged so it can be diagnosed.
+        suspend fun insertGroup(name: String, build: () -> List<Record>) {
+            val records = runCatching { build() }
+                .onFailure { Log.w(TAG, "build $name failed", it) }
+                .getOrDefault(emptyList())
+            records.chunked(BATCH).forEach { batch ->
+                val ok = runCatching { client.insertRecords(batch) }
+                    .onFailure { Log.w(TAG, "insert $name failed", it) }
+                    .isSuccess
+                if (ok) written += batch.size
+            }
         }
+
+        insertGroup("steps") { stepsRecords() }
+        insertGroup("heartRate") { heartRateRecords() }
+        insertGroup("restingHeartRate") { restingHeartRateRecords() }
+        insertGroup("spo2") { spo2Records() }
+        insertGroup("sleep") { sleepRecords() }
+        insertGroup("workout") { workoutRecords() }
         return written
     }
 
     private val zone: ZoneId get() = ZoneId.systemDefault()
     private fun offset(millis: Long) = zone.rules.getOffset(Instant.ofEpochMilli(millis))
 
-    private fun stepsRecords(): List<Record> {
-        val samples = localStore.stepSamples()
-        if (samples.isEmpty()) return emptyList()
-        return samples.groupBy { dayKey(it.time) }.map { (day, daySamples) ->
-            val start = daySamples.minOf { it.time }
-            val end = daySamples.maxOf { it.time }
+    private fun stepsRecords(): List<Record> =
+        stepsPerLocalDay(localStore.stepSamples()).map { day ->
             StepsRecord(
-                startTime = Instant.ofEpochMilli(start),
-                startZoneOffset = offset(start),
-                endTime = Instant.ofEpochMilli(end + 1),
-                endZoneOffset = offset(end),
-                count = daySamples.sumOf { it.steps }.toLong(),
-                metadata = Metadata.manualEntry(clientRecordId = "mihealth:steps:$day"),
+                startTime = Instant.ofEpochMilli(day.start),
+                startZoneOffset = offset(day.start),
+                endTime = Instant.ofEpochMilli(day.end + 1),
+                endZoneOffset = offset(day.end),
+                count = day.count.toLong(),
+                metadata = Metadata.manualEntry(clientRecordId = "mihealth:steps:${day.day}"),
             )
         }
-    }
 
     private fun heartRateRecords(): List<Record> {
         val samples = localStore.metricSamples(MetricTypes.HEART_RATE)

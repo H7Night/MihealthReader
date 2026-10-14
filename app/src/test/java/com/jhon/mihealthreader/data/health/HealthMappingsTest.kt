@@ -4,7 +4,10 @@ import androidx.health.connect.client.records.ExerciseSessionRecord
 import androidx.health.connect.client.records.SleepSessionRecord
 import com.jhon.mihealthreader.parse.StepSample
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.Instant
+import java.time.ZoneId
 
 class HealthMappingsTest {
 
@@ -39,5 +42,46 @@ class HealthMappingsTest {
         val byDay = stepsByLocalDay(samples)
         assertEquals(350, byDay.values.first())
         assertEquals(40, byDay.values.last())
+    }
+
+    @Test
+    fun `empty samples produce no days`() {
+        assertTrue(stepsByLocalDay(emptyList()).isEmpty())
+        assertTrue(stepsPerLocalDay(emptyList()).isEmpty())
+    }
+
+    @Test
+    fun `steps on different local days stay separate`() {
+        val zone = ZoneId.of("UTC")
+        val day1 = Instant.parse("2026-01-01T10:00:00Z").toEpochMilli()
+        val day2 = Instant.parse("2026-01-02T10:00:00Z").toEpochMilli()
+        val byDay = stepsByLocalDay(
+            listOf(
+                StepSample("s", day1, 0, 100, 0, 0),
+                StepSample("s", day1 + 60_000, 0, 50, 0, 0),
+                StepSample("s", day2, 0, 7, 0, 0),
+            ),
+            zone,
+        )
+        assertEquals(150, byDay["2026-01-01"])
+        assertEquals(7, byDay["2026-01-02"])
+    }
+
+    @Test
+    fun `stepsPerLocalDay reports the span of each day`() {
+        val zone = ZoneId.of("UTC")
+        val t0 = Instant.parse("2026-01-01T08:00:00Z").toEpochMilli()
+        val t1 = Instant.parse("2026-01-01T20:00:00Z").toEpochMilli()
+        val days = stepsPerLocalDay(
+            listOf(
+                StepSample("s", t1, 0, 20, 0, 0),
+                StepSample("s", t0, 0, 80, 0, 0),
+            ),
+            zone,
+        )
+        assertEquals(1, days.size)
+        assertEquals(t0, days.first().start)
+        assertEquals(t1, days.first().end)
+        assertEquals(100, days.first().count)
     }
 }

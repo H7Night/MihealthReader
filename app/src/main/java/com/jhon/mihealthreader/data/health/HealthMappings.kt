@@ -35,11 +35,29 @@ fun workoutExerciseType(typeKey: String): Int = when (typeKey) {
     else -> ExerciseSessionRecord.EXERCISE_TYPE_OTHER_WORKOUT
 }
 
+/** Steps aggregated for one local calendar day. */
+data class DaySteps(val day: String, val start: Long, val end: Long, val count: Int)
+
+/** Per-day step aggregates (ISO yyyy-MM-dd), ordered by each day's first sample. */
+fun stepsPerLocalDay(
+    samples: List<StepSample>,
+    zone: ZoneId = ZoneId.systemDefault(),
+): List<DaySteps> =
+    samples
+        .groupBy { Instant.ofEpochMilli(it.time).atZone(zone).toLocalDate().toString() }
+        .map { (day, daySamples) ->
+            DaySteps(
+                day = day,
+                start = daySamples.minOf { it.time },
+                end = daySamples.maxOf { it.time },
+                count = daySamples.sumOf { it.steps },
+            )
+        }
+        .sortedBy { it.start }
+
 /** Total steps per local calendar day (ISO yyyy-MM-dd). */
 fun stepsByLocalDay(
     samples: List<StepSample>,
     zone: ZoneId = ZoneId.systemDefault(),
 ): Map<String, Int> =
-    samples
-        .groupBy { Instant.ofEpochMilli(it.time).atZone(zone).toLocalDate().toString() }
-        .mapValues { (_, daySamples) -> daySamples.sumOf { it.steps } }
+    stepsPerLocalDay(samples, zone).associate { it.day to it.count }

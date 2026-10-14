@@ -130,8 +130,11 @@ class ExtractionViewModel @Inject constructor(
                 val saved = localStore.save(parsed, snapshot.sourcePackage, System.currentTimeMillis())
                 _summary.value = localStore.summary()
 
-                // Best-effort Health Connect write; never fails the extraction.
-                runCatching { healthConnectManager.sync() }
+                // Best-effort Health Connect write; only when the user opted in, and never
+                // fails the extraction. sync() itself also no-ops without write permission.
+                if (healthConnectPreferences.enabled()) {
+                    runCatching { healthConnectManager.sync() }
+                }
 
                 _state.value = ExtractionState.Success(
                     snapshot = snapshot.root,
@@ -160,6 +163,15 @@ class ExtractionViewModel @Inject constructor(
 
     fun syncHealthConnect() {
         viewModelScope.launch(io) {
+            if (!healthConnectPreferences.enabled()) {
+                _healthConnectMessage.value = "未开启 Health Connect 同步"
+                return@launch
+            }
+            if (!healthConnectManager.hasAllPermissions()) {
+                _healthConnectMessage.value = "需要授予全部 Health Connect 权限"
+                return@launch
+            }
+            _healthConnectMessage.value = "同步中…"
             val written = runCatching { healthConnectManager.sync() }.getOrDefault(0)
             _healthConnectMessage.value = "已写入 $written 条到 Health Connect"
         }

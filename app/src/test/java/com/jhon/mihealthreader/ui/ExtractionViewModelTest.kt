@@ -1,5 +1,6 @@
 package com.jhon.mihealthreader.ui
 
+import android.content.Context
 import com.jhon.mihealthreader.data.ParsedRepository
 import com.jhon.mihealthreader.data.health.HealthConnectManager
 import com.jhon.mihealthreader.discover.TargetApp
@@ -10,6 +11,7 @@ import com.jhon.mihealthreader.dump.ManifestWriter
 import com.jhon.mihealthreader.dump.TableDump
 import com.jhon.mihealthreader.extract.Extractor
 import com.jhon.mihealthreader.extract.Snapshot
+import com.jhon.mihealthreader.local.HealthConnectPreferences
 import com.jhon.mihealthreader.local.LocalStore
 import com.jhon.mihealthreader.local.MiHealthDatabase
 import com.jhon.mihealthreader.parse.Normalizer
@@ -80,6 +82,7 @@ class ExtractionViewModelTest {
         extractor: Extractor,
         dumper: Dumper,
         writer: ManifestWriter,
+        hc: HealthConnectManager = HealthConnectManager(RuntimeEnvironment.getApplication(), store),
     ) = ExtractionViewModel(
         rootShell = root,
         targetFinder = finder,
@@ -88,11 +91,36 @@ class ExtractionViewModelTest {
         manifestWriter = writer,
         localStore = store,
         parsedRepository = ParsedRepository(store),
-        healthConnectManager = HealthConnectManager(RuntimeEnvironment.getApplication(), store),
+        healthConnectManager = hc,
         normalizer = Normalizer(),
         io = main,
         context = RuntimeEnvironment.getApplication(),
     )
+
+    private class RecordingHealthConnectManager(context: Context, store: LocalStore) :
+        HealthConnectManager(context, store) {
+        var syncCalls = 0
+        override suspend fun sync(): Int {
+            syncCalls++
+            return super.sync()
+        }
+    }
+
+    private fun successfulVm(hc: HealthConnectManager): ExtractionViewModel {
+        val root = File(tmp.root, "success-${System.nanoTime()}").apply { mkdirs() }
+        val raw = File(root, "raw/com.xiaomi.wearable/databases").apply { mkdirs() }
+        val dbFile = File(raw, "mi.db").apply { writeText("x") }
+        return viewModel(
+            granted(),
+            { listOf(TargetApp("com.xiaomi.wearable", "/data/data/com.xiaomi.wearable/databases", listOf("mi.db"))) },
+            Extractor { _, _ -> Snapshot(root, raw, "com.xiaomi.wearable", listOf(dbFile)) },
+            Dumper { db, _ ->
+                DbDumpResult(db.name, true, listOf(TableDump("t", 2, File("json/${db.name}/t.json"))))
+            },
+            ManifestWriter(),
+            hc,
+        )
+    }
 
     @Test
     fun `errors when root denied`() = runTest(main) {
@@ -191,5 +219,25 @@ class ExtractionViewModelTest {
         vm.start()
         advanceUntilIdle()
         assertEquals(1, calls)
+    }
+
+    @Test
+    fun `auto sync runs after extraction when health connect enabled`() = runTest(main) {
+        HealthConnectPreferences(RuntimeEnvironment.getApplication()).setEnabled(true)
+        val hc = RecordingHealthConnectManager(RuntimeEnvironment.getApplication(), store)
+        val vm = successfulVm(hc)
+        vm.start()
+        advanceUntilIdle()
+        assertEquals(1, hc.syncCalls)
+    }
+
+    @Test
+    fun `auto sync skipped after extraction when health connect disabled`() = runTest(main) {
+        HealthConnectPreferences(RuntimeEnvironment.getApplication()).setEnabled(false)
+        val hc = RecordingHealthConnectManager(RuntimeEnvironment.getApplication(), store)
+        val vm = successfulVm(hc)
+        vm.start()
+        advanceUntilIdle()
+        assertEquals(0, hc.syncCalls)
     }
 }
