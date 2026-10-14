@@ -1,5 +1,6 @@
 package com.jhon.mihealthreader.ui
 
+import com.jhon.mihealthreader.data.ParsedRepository
 import com.jhon.mihealthreader.discover.TargetApp
 import com.jhon.mihealthreader.discover.TargetFinder
 import com.jhon.mihealthreader.dump.DbDumpResult
@@ -10,6 +11,7 @@ import com.jhon.mihealthreader.extract.Extractor
 import com.jhon.mihealthreader.extract.Snapshot
 import com.jhon.mihealthreader.local.LocalStore
 import com.jhon.mihealthreader.local.MiHealthDatabase
+import com.jhon.mihealthreader.parse.Normalizer
 import com.jhon.mihealthreader.parse.StepSample
 import com.jhon.mihealthreader.root.PrivilegedShell
 import com.jhon.mihealthreader.root.ShellOutput
@@ -83,11 +85,11 @@ class ExtractionViewModelTest {
         extractor = extractor,
         dumper = dumper,
         manifestWriter = writer,
-        androidVersion = 34,
-        appVersion = "0.1.0",
-        exportsDir = tmp.root,
         localStore = store,
+        parsedRepository = ParsedRepository(store),
+        normalizer = Normalizer(),
         io = main,
+        context = RuntimeEnvironment.getApplication(),
     )
 
     @Test

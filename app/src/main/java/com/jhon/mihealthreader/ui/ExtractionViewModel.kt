@@ -1,7 +1,12 @@
 package com.jhon.mihealthreader.ui
 
+import android.content.Context
+import android.os.Build
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.jhon.mihealthreader.BuildConfig
+import com.jhon.mihealthreader.data.ParsedRepository
+import com.jhon.mihealthreader.di.IoDispatcher
 import com.jhon.mihealthreader.discover.TargetFinder
 import com.jhon.mihealthreader.dump.Dumper
 import com.jhon.mihealthreader.dump.ManifestData
@@ -11,6 +16,9 @@ import com.jhon.mihealthreader.local.LocalStore
 import com.jhon.mihealthreader.local.LocalSummary
 import com.jhon.mihealthreader.parse.Normalizer
 import com.jhon.mihealthreader.root.PrivilegedShell
+import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,19 +28,23 @@ import kotlinx.coroutines.launch
 import java.io.File
 import java.time.Instant
 
-class ExtractionViewModel(
+@HiltViewModel
+class ExtractionViewModel @Inject constructor(
     private val rootShell: PrivilegedShell,
     private val targetFinder: TargetFinder,
     private val extractor: Extractor,
     private val dumper: Dumper,
     private val manifestWriter: ManifestWriter,
-    private val androidVersion: Int,
-    private val appVersion: String,
-    private val exportsDir: File,
-    private val normalizer: Normalizer = Normalizer(),
     private val localStore: LocalStore,
-    private val io: CoroutineDispatcher = Dispatchers.IO,
+    val parsedRepository: ParsedRepository,
+    private val normalizer: Normalizer,
+    @IoDispatcher private val io: CoroutineDispatcher,
+    @ApplicationContext context: Context,
 ) : ViewModel() {
+
+    private val androidVersion = Build.VERSION.SDK_INT
+    private val appVersion = BuildConfig.VERSION_NAME
+    val exportsDir: File = File(context.filesDir, "exports")
 
     private val _state = MutableStateFlow<ExtractionState>(ExtractionState.Idle)
     val state: StateFlow<ExtractionState> = _state.asStateFlow()

@@ -42,9 +42,9 @@ import java.io.File
 @Composable
 fun AppNav(
     extractionViewModel: ExtractionViewModel,
-    parsedRepository: ParsedRepository,
-    exportsDir: File,
 ) {
+    val parsedRepository = extractionViewModel.parsedRepository
+    val exportsDir = extractionViewModel.exportsDir
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
