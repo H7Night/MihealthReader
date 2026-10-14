@@ -230,3 +230,16 @@ adb exec-out run-as com.jhon.mihealthreader tar -c files/exports | tar -x
 - **导出 JSON（SAF）**：写出 `/sdcard/Download/mihealth-normalized.json`（2.18MB），内容校验通过
   （`schema_version=1.0`；sleep 334、daily_activity 216、heart_rate 25331、resting 132、spo2 2、workouts 62、body_measurements 1）。
 - 界面：今天（启动即读）、视图（按月份图表）、设置、睡眠详情、心率详情 均正常渲染。
+
+## 24. Hilt 迁移 + Health Connect 写入 + MD3（2026-10-14）
+
+分支 `feat/hilt-healthconnect-md3`（基于 `feat/spec-sync`）。
+
+- **技术栈对齐**：Kotlin 2.2.21 · AGP 8.13.2 · Compose BOM 2025.11.00 · Room 2.8.3 · Hilt 2.57.2 · targetSdk/compileSdk 36；新增 `androidx.health.connect:connect-client` 1.1.0 与 `material-icons-core`；Gradle wrapper 8.9 → 8.13；Robolectric 固定 SDK 35（`app/src/test/resources/robolectric.properties`）。
+  - Windows 注意：`aidl` 生成文件头会写入含绝对路径的命令行注释，路径含 `\u`（`C:\Users\...`）会导致 javac「非法 Unicode 转义」；`app/build.gradle.kts` 加了编译前剥离该注释行的临时任务。
+- **Hilt**：`@HiltAndroidApp` App、`@AndroidEntryPoint` MainActivity、`di/`（Database/App/Privileged/Repository 模块）；`ExtractionViewModel` 改 `@HiltViewModel`；特权通道与解析逻辑不变。
+- **Health Connect**：`data/health/HealthMappings.kt`（睡眠阶段/运动类型/步数按日，纯函数 + 单测）、`HealthConnectManager`（写 Steps/HeartRate/RestingHeartRate/SpO2/Sleep(+阶段)/ExerciseSession；`clientRecordId` 幂等、分批、失败仅记日志）；提取后自动写 + 设置页开关与「立即同步」；权限与 rationale activity/alias。
+- **MD3**：12 以下回退改为 Material 基线色板。
+- **CI**：`.github/workflows/ci.yml`（testDebugUnitTest + lintDebug + assembleDebug）。
+- 验证：`./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug` 全绿（含新增 `HealthMappingsTest`）。
+- 待办：真机 HC 端到端（授权/写入/幂等）与界面确认。
