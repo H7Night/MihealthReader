@@ -30,18 +30,21 @@ import com.jhon.mihealthreader.data.ChartData
 import com.jhon.mihealthreader.data.ParsedRepository
 import com.jhon.mihealthreader.data.SleepSummary
 import com.jhon.mihealthreader.local.LocalSummary
+import com.jhon.mihealthreader.ui.ExtractionState
 import com.jhon.mihealthreader.ui.Metric
 import com.jhon.mihealthreader.ui.charts.CapsuleBars
 import com.jhon.mihealthreader.ui.charts.DottedLine
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun TodayScreen(
     parsedRepository: ParsedRepository,
     summary: LocalSummary,
     dataLoaded: Boolean,
+    extractionState: ExtractionState,
     onOpenDetail: (Metric) -> Unit,
     onGoSettings: () -> Unit,
 ) {
@@ -90,6 +93,15 @@ fun TodayScreen(
             style = MaterialTheme.typography.headlineSmall,
             modifier = Modifier.padding(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 8.dp),
         )
+
+        updateStatusLine(extractionState, summary.lastExtractedAt)?.let { line ->
+            Text(
+                line,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 8.dp),
+            )
+        }
 
         val steps7 = remember(activity) { ChartData.lastN(ChartData.stepsSeries(activity), 7).map { it.value } }
         val sleep7 = remember(sleep) { ChartData.lastN(ChartData.sleepSeries(sleep), 7).map { it.total } }
@@ -220,3 +232,12 @@ private fun MetricGridCard(
 
 private fun localDate(epochSeconds: Long): String =
     Instant.ofEpochSecond(epochSeconds).atZone(ZoneId.systemDefault()).toLocalDate().toString()
+
+private val UPDATE_FORMAT = DateTimeFormatter.ofPattern("HH:mm")
+
+private fun updateStatusLine(state: ExtractionState, lastExtractedAt: Long?): String? = when {
+    state is ExtractionState.Running -> "更新中…"
+    lastExtractedAt != null ->
+        "上次更新 " + Instant.ofEpochMilli(lastExtractedAt).atZone(ZoneId.systemDefault()).format(UPDATE_FORMAT)
+    else -> null
+}

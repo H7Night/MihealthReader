@@ -85,69 +85,87 @@ class ExtractionViewModel @Inject constructor(
     fun start() {
         if (running) return
         running = true
+        viewModelScope.launch(io) { runExtraction() }
+    }
+
+    /**
+     * Foreground auto-refresh: run extraction on app entry unless one is already in progress,
+     * root is known to be denied, or the last sync was less than [MIN_AUTO_INTERVAL_MS] ago.
+     */
+    fun onForeground() {
+        if (running) return
+        if (_rootGranted.value == false) return
         viewModelScope.launch(io) {
-            try {
-                _state.value = ExtractionState.Running("检测 root 权限")
-                if (!rootShell.isGranted()) {
-                    _state.value = ExtractionState.Error("root 权限被拒绝，请授予后重试")
-                    return@launch
-                }
+            if (running) return@launch
+            val last = localStore.summary().lastExtractedAt
+            if (last != null && System.currentTimeMillis() - last < MIN_AUTO_INTERVAL_MS) return@launch
+            running = true
+            runExtraction()
+        }
+    }
 
-                _state.value = ExtractionState.Running("定位小米运动健康数据库")
-                val target = targetFinder.findCandidates().firstOrNull()
-                if (target == null) {
-                    _state.value = ExtractionState.Error("未找到目标应用数据库（可手动指定包名）")
-                    return@launch
-                }
-
-                _state.value = ExtractionState.Running("复制原始数据库快照")
-                val snapshot = extractor.extract(target, exportsDir)
-
-                _state.value = ExtractionState.Running("导出 JSON")
-                val sidecarSuffixes = listOf("-wal", "-shm", "-journal")
-                val dbFiles = snapshot.files.filter { file ->
-                    file.isFile && sidecarSuffixes.none { file.name.endsWith(it) }
-                }
-                val results = dbFiles.map { db ->
-                    val relative = db.relativeToOrNull(snapshot.directory)?.path ?: db.name
-                    dumper.dump(db, File(snapshot.root, "json/$relative"))
-                }
-
-                manifestWriter.write(
-                    ManifestData(
-                        exportedAt = Instant.now().toString(),
-                        sourcePackage = snapshot.sourcePackage,
-                        androidVersion = androidVersion,
-                        appVersion = appVersion,
-                        databases = results,
-                    ),
-                    File(snapshot.root, "manifest.json"),
-                )
-
-                _state.value = ExtractionState.Running("解析睡眠与步数")
-                val parsed = normalizer.normalize(snapshot.root)
-
-                val saved = localStore.save(parsed, snapshot.sourcePackage, System.currentTimeMillis())
-                _summary.value = localStore.summary()
-
-                // Best-effort Health Connect write; only when the user opted in, and never
-                // fails the extraction. sync() itself also no-ops without write permission.
-                if (healthConnectPreferences.enabled()) {
-                    runCatching { healthConnectManager.sync() }
-                }
-
-                _state.value = ExtractionState.Success(
-                    snapshot = snapshot.root,
-                    tableCount = results.sumOf { it.tables.size },
-                    newRecords = saved.newRecords,
-                )
-            } catch (e: kotlinx.coroutines.CancellationException) {
-                throw e
-            } catch (e: Throwable) {
-                _state.value = ExtractionState.Error(e.message ?: e.toString())
-            } finally {
-                running = false
+    private suspend fun runExtraction() {
+        try {
+            _state.value = ExtractionState.Running("检测 root 权限")
+            if (!rootShell.isGranted()) {
+                _state.value = ExtractionState.Error("root 权限被拒绝，请授予后重试")
+                return
             }
+
+            _state.value = ExtractionState.Running("定位小米运动健康数据库")
+            val target = targetFinder.findCandidates().firstOrNull()
+            if (target == null) {
+                _state.value = ExtractionState.Error("未找到目标应用数据库（可手动指定包名）")
+                return
+            }
+
+            _state.value = ExtractionState.Running("复制原始数据库快照")
+            val snapshot = extractor.extract(target, exportsDir)
+
+            _state.value = ExtractionState.Running("导出 JSON")
+            val sidecarSuffixes = listOf("-wal", "-shm", "-journal")
+            val dbFiles = snapshot.files.filter { file ->
+                file.isFile && sidecarSuffixes.none { file.name.endsWith(it) }
+            }
+            val results = dbFiles.map { db ->
+                val relative = db.relativeToOrNull(snapshot.directory)?.path ?: db.name
+                dumper.dump(db, File(snapshot.root, "json/$relative"))
+            }
+
+            manifestWriter.write(
+                ManifestData(
+                    exportedAt = Instant.now().toString(),
+                    sourcePackage = snapshot.sourcePackage,
+                    androidVersion = androidVersion,
+                    appVersion = appVersion,
+                    databases = results,
+                ),
+                File(snapshot.root, "manifest.json"),
+            )
+
+            _state.value = ExtractionState.Running("解析睡眠与步数")
+            val parsed = normalizer.normalize(snapshot.root)
+
+            val saved = localStore.save(parsed, snapshot.sourcePackage, System.currentTimeMillis())
+            _summary.value = localStore.summary()
+
+            // Best-effort Health Connect write; only when the user opted in, and never
+            // fails the extraction. sync() itself also no-ops without write permission.
+            if (healthConnectPreferences.enabled()) {
+                runCatching { healthConnectManager.sync() }
+            }
+
+            _state.value = ExtractionState.Success(
+                snapshot = snapshot.root,
+                tableCount = results.sumOf { it.tables.size },
+                newRecords = saved.newRecords,
+            )
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Throwable) {
+            _state.value = ExtractionState.Error(e.message ?: e.toString())
+        } finally {
+            running = false
         }
     }
 
@@ -175,5 +193,9 @@ class ExtractionViewModel @Inject constructor(
             val written = runCatching { healthConnectManager.sync() }.getOrDefault(0)
             _healthConnectMessage.value = "已写入 $written 条到 Health Connect"
         }
+    }
+
+    private companion object {
+        const val MIN_AUTO_INTERVAL_MS = 60_000L
     }
 }

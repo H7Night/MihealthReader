@@ -15,6 +15,7 @@ import com.jhon.mihealthreader.local.HealthConnectPreferences
 import com.jhon.mihealthreader.local.LocalStore
 import com.jhon.mihealthreader.local.MiHealthDatabase
 import com.jhon.mihealthreader.parse.Normalizer
+import com.jhon.mihealthreader.parse.ParsedData
 import com.jhon.mihealthreader.parse.StepSample
 import com.jhon.mihealthreader.root.PrivilegedShell
 import com.jhon.mihealthreader.root.ShellOutput
@@ -75,6 +76,22 @@ class ExtractionViewModelTest {
 
         override fun isGranted(): Boolean = true
     }
+
+    private fun denied() = object : PrivilegedShell {
+        override fun run(vararg commands: String) = ShellOutput(1, emptyList(), listOf("denied"))
+
+        override fun openFile(path: String): InputStream = ByteArrayInputStream(ByteArray(0))
+
+        override fun isGranted(): Boolean = false
+    }
+
+    private fun stepData() = ParsedData(
+        sleep = emptyList(),
+        samples = listOf(StepSample("dev", 0, 0, 10, 5, 1)),
+        activity = emptyList(),
+        skipped = 0,
+        outputFile = File("out.json"),
+    )
 
     private fun viewModel(
         root: PrivilegedShell,
@@ -239,5 +256,55 @@ class ExtractionViewModelTest {
         vm.start()
         advanceUntilIdle()
         assertEquals(0, hc.syncCalls)
+    }
+
+    @Test
+    fun `foreground auto extraction runs when last sync is stale`() = runTest(main) {
+        store.save(stepData(), "com.mi.health", System.currentTimeMillis() - 120_000)
+        var calls = 0
+        val vm = viewModel(
+            granted(),
+            { calls++; emptyList() },
+            { _, _ -> error("extractor should not run") },
+            { _, _ -> error("dumper should not run") },
+            ManifestWriter(),
+        )
+        advanceUntilIdle()
+        vm.onForeground()
+        advanceUntilIdle()
+        assertEquals(1, calls)
+    }
+
+    @Test
+    fun `foreground auto extraction skipped within the throttle window`() = runTest(main) {
+        store.save(stepData(), "com.mi.health", System.currentTimeMillis())
+        var calls = 0
+        val vm = viewModel(
+            granted(),
+            { calls++; emptyList() },
+            { _, _ -> error("extractor should not run") },
+            { _, _ -> error("dumper should not run") },
+            ManifestWriter(),
+        )
+        advanceUntilIdle()
+        vm.onForeground()
+        advanceUntilIdle()
+        assertEquals(0, calls)
+    }
+
+    @Test
+    fun `foreground auto extraction skipped when root denied`() = runTest(main) {
+        var calls = 0
+        val vm = viewModel(
+            denied(),
+            { calls++; emptyList() },
+            { _, _ -> error("extractor should not run") },
+            { _, _ -> error("dumper should not run") },
+            ManifestWriter(),
+        )
+        advanceUntilIdle()
+        vm.onForeground()
+        advanceUntilIdle()
+        assertEquals(0, calls)
     }
 }
