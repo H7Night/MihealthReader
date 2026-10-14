@@ -1,6 +1,7 @@
 package com.jhon.mihealthreader.ui
 
 import com.jhon.mihealthreader.data.ParsedRepository
+import com.jhon.mihealthreader.data.health.HealthConnectManager
 import com.jhon.mihealthreader.discover.TargetApp
 import com.jhon.mihealthreader.discover.TargetFinder
 import com.jhon.mihealthreader.dump.DbDumpResult
@@ -87,6 +88,7 @@ class ExtractionViewModelTest {
         manifestWriter = writer,
         localStore = store,
         parsedRepository = ParsedRepository(store),
+        healthConnectManager = HealthConnectManager(RuntimeEnvironment.getApplication(), store),
         normalizer = Normalizer(),
         io = main,
         context = RuntimeEnvironment.getApplication(),

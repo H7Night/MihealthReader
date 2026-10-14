@@ -147,6 +147,8 @@ fun AppNav(
                 val state by extractionViewModel.state.collectAsState()
                 val rootGranted by extractionViewModel.rootGranted.collectAsState()
                 val summary by extractionViewModel.summary.collectAsState()
+                val hcEnabled by extractionViewModel.healthConnectEnabled.collectAsState()
+                val hcMessage by extractionViewModel.healthConnectMessage.collectAsState()
                 val context = LocalContext.current
                 val backendPrefs = remember { BackendPreferences(context) }
                 val exportManager = remember { ExportManager(exportsDir) }
@@ -167,6 +169,13 @@ fun AppNav(
                         ShizukuPermission.request(1001) { granted -> shizukuGranted = granted }
                     },
                     onStart = { extractionViewModel.start() },
+                    healthConnectAvailable = extractionViewModel.healthConnectAvailable,
+                    healthConnectEnabled = hcEnabled,
+                    healthConnectPermissions = extractionViewModel.healthConnectPermissions,
+                    healthConnectMessage = hcMessage,
+                    onToggleHealthConnect = { extractionViewModel.setHealthConnectEnabled(it) },
+                    onHealthPermissionsResult = { extractionViewModel.onHealthPermissionsResult(it) },
+                    onSyncHealthConnect = { extractionViewModel.syncHealthConnect() },
                 )
             }
         }

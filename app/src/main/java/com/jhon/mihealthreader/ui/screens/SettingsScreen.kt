@@ -11,15 +11,18 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.health.connect.client.PermissionController
 import com.jhon.mihealthreader.data.ExportManager
 import com.jhon.mihealthreader.local.BackendType
 import com.jhon.mihealthreader.local.LocalSummary
@@ -39,9 +42,21 @@ fun SettingsScreen(
     onSelectBackend: (BackendType) -> Unit,
     onRequestShizuku: () -> Unit,
     onStart: () -> Unit,
+    healthConnectAvailable: Boolean = false,
+    healthConnectEnabled: Boolean = false,
+    healthConnectPermissions: Set<String> = emptySet(),
+    healthConnectMessage: String? = null,
+    onToggleHealthConnect: (Boolean) -> Unit = {},
+    onHealthPermissionsResult: (Boolean) -> Unit = {},
+    onSyncHealthConnect: () -> Unit = {},
 ) {
     val context = LocalContext.current
     var exportMessage by remember { mutableStateOf<String?>(null) }
+    val healthPermissionLauncher = rememberLauncherForActivityResult(
+        PermissionController.createRequestPermissionResultContract(),
+    ) { granted ->
+        onHealthPermissionsResult(granted.containsAll(healthConnectPermissions))
+    }
     val exportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/json"),
     ) { uri ->
@@ -119,6 +134,26 @@ fun SettingsScreen(
         exportMessage?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
 
 
+        if (healthConnectAvailable) {
+            Text("Health Connect", style = MaterialTheme.typography.titleMedium)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text("同步到 Health Connect")
+                Switch(
+                    checked = healthConnectEnabled,
+                    onCheckedChange = { checked ->
+                        if (checked) healthPermissionLauncher.launch(healthConnectPermissions)
+                        else onToggleHealthConnect(false)
+                    },
+                )
+            }
+            if (healthConnectEnabled) {
+                Button(onClick = onSyncHealthConnect) { Text("立即同步") }
+            }
+            healthConnectMessage?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+        }
 
 
         Text("关于", style = MaterialTheme.typography.titleMedium)

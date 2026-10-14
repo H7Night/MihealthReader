@@ -6,8 +6,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jhon.mihealthreader.BuildConfig
 import com.jhon.mihealthreader.data.ParsedRepository
+import com.jhon.mihealthreader.data.health.HealthConnectManager
 import com.jhon.mihealthreader.di.IoDispatcher
 import com.jhon.mihealthreader.discover.TargetFinder
+import com.jhon.mihealthreader.local.HealthConnectPreferences
 import com.jhon.mihealthreader.dump.Dumper
 import com.jhon.mihealthreader.dump.ManifestData
 import com.jhon.mihealthreader.dump.ManifestWriter
@@ -37,14 +39,17 @@ class ExtractionViewModel @Inject constructor(
     private val manifestWriter: ManifestWriter,
     private val localStore: LocalStore,
     val parsedRepository: ParsedRepository,
+    private val healthConnectManager: HealthConnectManager,
     private val normalizer: Normalizer,
     @IoDispatcher private val io: CoroutineDispatcher,
-    @ApplicationContext context: Context,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     private val androidVersion = Build.VERSION.SDK_INT
     private val appVersion = BuildConfig.VERSION_NAME
     val exportsDir: File = File(context.filesDir, "exports")
+
+    private val healthConnectPreferences = HealthConnectPreferences(context)
 
     private val _state = MutableStateFlow<ExtractionState>(ExtractionState.Idle)
     val state: StateFlow<ExtractionState> = _state.asStateFlow()
@@ -57,6 +62,15 @@ class ExtractionViewModel @Inject constructor(
 
     private val _dataLoaded = MutableStateFlow(false)
     val dataLoaded: StateFlow<Boolean> = _dataLoaded.asStateFlow()
+
+    val healthConnectAvailable: Boolean = healthConnectManager.isAvailable()
+    val healthConnectPermissions: Set<String> get() = healthConnectManager.permissions
+
+    private val _healthConnectEnabled = MutableStateFlow(healthConnectPreferences.enabled())
+    val healthConnectEnabled: StateFlow<Boolean> = _healthConnectEnabled.asStateFlow()
+
+    private val _healthConnectMessage = MutableStateFlow<String?>(null)
+    val healthConnectMessage: StateFlow<String?> = _healthConnectMessage.asStateFlow()
 
     private var running = false
 
@@ -116,6 +130,9 @@ class ExtractionViewModel @Inject constructor(
                 val saved = localStore.save(parsed, snapshot.sourcePackage, System.currentTimeMillis())
                 _summary.value = localStore.summary()
 
+                // Best-effort Health Connect write; never fails the extraction.
+                runCatching { healthConnectManager.sync() }
+
                 _state.value = ExtractionState.Success(
                     snapshot = snapshot.root,
                     tableCount = results.sumOf { it.tables.size },
@@ -128,6 +145,23 @@ class ExtractionViewModel @Inject constructor(
             } finally {
                 running = false
             }
+        }
+    }
+
+    fun setHealthConnectEnabled(enabled: Boolean) {
+        healthConnectPreferences.setEnabled(enabled)
+        _healthConnectEnabled.value = enabled
+        if (enabled) syncHealthConnect()
+    }
+
+    fun onHealthPermissionsResult(granted: Boolean) {
+        setHealthConnectEnabled(granted)
+    }
+
+    fun syncHealthConnect() {
+        viewModelScope.launch(io) {
+            val written = runCatching { healthConnectManager.sync() }.getOrDefault(0)
+            _healthConnectMessage.value = "已写入 $written 条到 Health Connect"
         }
     }
 }

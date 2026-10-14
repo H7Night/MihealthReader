@@ -41,7 +41,9 @@ class HealthConnectManager @Inject constructor(
     )
 
     fun isAvailable(): Boolean =
-        HealthConnectClient.getSdkStatus(context) == HealthConnectClient.SDK_AVAILABLE
+        runCatching {
+            HealthConnectClient.getSdkStatus(context) == HealthConnectClient.SDK_AVAILABLE
+        }.getOrDefault(false)
 
     private fun client(): HealthConnectClient? =
         if (isAvailable()) HealthConnectClient.getOrCreate(context) else null
