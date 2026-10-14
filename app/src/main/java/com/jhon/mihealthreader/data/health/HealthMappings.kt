@@ -54,10 +54,3 @@ fun stepsPerLocalDay(
             )
         }
         .sortedBy { it.start }
-
-/** Total steps per local calendar day (ISO yyyy-MM-dd). */
-fun stepsByLocalDay(
-    samples: List<StepSample>,
-    zone: ZoneId = ZoneId.systemDefault(),
-): Map<String, Int> =
-    stepsPerLocalDay(samples, zone).associate { it.day to it.count }

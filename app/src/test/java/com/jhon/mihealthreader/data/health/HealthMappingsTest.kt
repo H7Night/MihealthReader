@@ -39,14 +39,13 @@ class HealthMappingsTest {
             StepSample("s", 60_000L, 0, 250, 0, 0),
             StepSample("s", 86_400_000L, 0, 40, 0, 0),
         )
-        val byDay = stepsByLocalDay(samples)
-        assertEquals(350, byDay.values.first())
-        assertEquals(40, byDay.values.last())
+        val days = stepsPerLocalDay(samples)
+        assertEquals(350, days.first().count)
+        assertEquals(40, days.last().count)
     }
 
     @Test
     fun `empty samples produce no days`() {
-        assertTrue(stepsByLocalDay(emptyList()).isEmpty())
         assertTrue(stepsPerLocalDay(emptyList()).isEmpty())
     }
 
@@ -55,14 +54,14 @@ class HealthMappingsTest {
         val zone = ZoneId.of("UTC")
         val day1 = Instant.parse("2026-01-01T10:00:00Z").toEpochMilli()
         val day2 = Instant.parse("2026-01-02T10:00:00Z").toEpochMilli()
-        val byDay = stepsByLocalDay(
+        val byDay = stepsPerLocalDay(
             listOf(
                 StepSample("s", day1, 0, 100, 0, 0),
                 StepSample("s", day1 + 60_000, 0, 50, 0, 0),
                 StepSample("s", day2, 0, 7, 0, 0),
             ),
             zone,
-        )
+        ).associate { it.day to it.count }
         assertEquals(150, byDay["2026-01-01"])
         assertEquals(7, byDay["2026-01-02"])
     }
