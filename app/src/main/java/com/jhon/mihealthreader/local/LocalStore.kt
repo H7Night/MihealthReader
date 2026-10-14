@@ -162,6 +162,9 @@ class LocalStore(private val db: MiHealthDatabase) {
             entities.map { MetricSample(it.metricType, it.sourceId, it.time, it.value) }
         }
 
+    fun metricSamples(type: String): List<MetricSample> =
+        db.metricDao().byType(type).map { MetricSample(it.metricType, it.sourceId, it.time, it.value) }
+
     fun workoutsFlow(): Flow<List<Workout>> =
         db.workoutDao().allFlow().map { entities ->
             entities.map {
@@ -170,6 +173,14 @@ class LocalStore(private val db: MiHealthDatabase) {
                     it.avgHr, it.maxHr, it.minHr, it.distanceMeters, it.type, it.typeName,
                 )
             }
+        }
+
+    fun workouts(): List<Workout> =
+        db.workoutDao().all().map {
+            Workout(
+                it.sourceId, it.start, it.end, it.durationSec, it.calories,
+                it.avgHr, it.maxHr, it.minHr, it.distanceMeters, it.type, it.typeName,
+            )
         }
 
     fun bodyMeasurementsFlow(): Flow<List<BodyMeasurement>> =

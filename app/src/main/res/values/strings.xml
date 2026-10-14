@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">MihealthReader</string>
+    <string name="label_health_connect_rationale">MihealthReader 会把已解析的步数、心率、血氧、睡眠与运动写入 Health Connect，数据仅保存在本机。</string>
 </resources>
