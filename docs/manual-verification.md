@@ -242,4 +242,15 @@ adb exec-out run-as com.jhon.mihealthreader tar -c files/exports | tar -x
 - **MD3**：12 以下回退改为 Material 基线色板。
 - **CI**：`.github/workflows/ci.yml`（testDebugUnitTest + lintDebug + assembleDebug）。
 - 验证：`./gradlew :app:testDebugUnitTest :app:lintDebug :app:assembleDebug` 全绿（含新增 `HealthMappingsTest`）。
-- 待办：真机 HC 端到端（授权/写入/幂等）与界面确认。
+
+## 25. 审计修复 + 前台自动提取 + 真机 HC 端到端（2026-10-14）
+
+- **审计修复**（提交 `65af4e7`、`59a087c`）：自动同步遵守 Health Connect 开关与写权限；`sync()` 无权限即 no-op；Manager 复用 `stepsPerLocalDay` 纯函数并删除死代码 `stepsByLocalDay`；补 `HealthMappingsTest` 边界（空样本、跨日、每日区间、非法睡眠阶段）。
+- **前台自动提取**（提交 `a9a4ea8`）：`MainActivity.onStart` → `ExtractionViewModel.onForeground()`，60s 节流、root 未授权跳过、并发保护；今天页显示「更新中… / 上次更新 HH:mm」。实测启动即生成新导出并写入本库。
+- **真机 HC 端到端**（OnePlus CPH2747 / Android 16 / KernelSU，安装 `app-debug.apk`）：
+  - 授权：`WRITE_STEPS`/`WRITE_EXERCISE` 原本未授予，`hasAllPermissions()` 为 false 导致静默 no-op；root `pm grant` 后 6 项全授予，`dumpsys healthconnect` 显示 `Contributed Data: true`。
+  - **发现并修复单位 bug**（提交 `e237a83`）：LocalStore 全部时间为 **epoch 秒**，但 `HealthConnectManager` 用 `ofEpochMilli`，HC 记录时间落在 1970-01-21/22；改用 `ofEpochSecond` 后 steps 161 条落在 2026（仅 2 条历史 1970 残留）。
+  - **发现并修复睡眠阶段 bug**（同提交）：1 个零长度阶段（`end==start`）使整个 sleep 组 build 抛错、睡眠数据全部丢失；新增 `validSleepStages` 过滤 `end<=start`，睡眠 337 条正常写入。
+  - 幂等：连续两次同步，HC 中 `mihealth:*` 记录总数稳定在 977（steps 220 / hr 217 / resting 136 / sleep 337 / spo2 4 / workout 63），无重复。
+  - 验证：`testDebugUnitTest` 97 项全绿、`lintDebug`/`assembleDebug` 通过。
+- 遗留：HC 中残留 2 条 1970 时间戳的旧记录（修复前构建写入），可在 Health Connect「删除此应用数据」清除；HC 二进制库位于 `/data/system_ce/0/healthconnect/healthconnect.db`。
