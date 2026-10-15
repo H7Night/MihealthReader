@@ -2,6 +2,7 @@ package com.jhon.mihealthreader.data.health
 
 import androidx.health.connect.client.records.ExerciseSessionRecord
 import androidx.health.connect.client.records.SleepSessionRecord
+import com.jhon.mihealthreader.parse.SleepStage
 import com.jhon.mihealthreader.parse.StepSample
 import java.time.Instant
 import java.time.ZoneId
@@ -44,7 +45,7 @@ fun stepsPerLocalDay(
     zone: ZoneId = ZoneId.systemDefault(),
 ): List<DaySteps> =
     samples
-        .groupBy { Instant.ofEpochMilli(it.time).atZone(zone).toLocalDate().toString() }
+        .groupBy { Instant.ofEpochSecond(it.time).atZone(zone).toLocalDate().toString() }
         .map { (day, daySamples) ->
             DaySteps(
                 day = day,
@@ -54,3 +55,10 @@ fun stepsPerLocalDay(
             )
         }
         .sortedBy { it.start }
+
+/** A sleep stage with a positive duration, ready to map to Health Connect. */
+data class StageSpan(val start: Long, val end: Long, val state: Int)
+
+/** Drops zero-length and reversed stages; Health Connect rejects those outright. */
+fun validSleepStages(stages: List<SleepStage>): List<StageSpan> =
+    stages.filter { it.end > it.start }.map { StageSpan(it.start, it.end, it.state) }

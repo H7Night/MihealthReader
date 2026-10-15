@@ -85,15 +85,17 @@ open class HealthConnectManager @Inject constructor(
         return written
     }
 
+    // LocalStore stores every timestamp as epoch SECONDS (see ParsedRepository/ChartData). All
+    // Health Connect records must therefore be built with Instant.ofEpochSecond.
     private val zone: ZoneId get() = ZoneId.systemDefault()
-    private fun offset(millis: Long) = zone.rules.getOffset(Instant.ofEpochMilli(millis))
+    private fun offset(seconds: Long) = zone.rules.getOffset(Instant.ofEpochSecond(seconds))
 
     private fun stepsRecords(): List<Record> =
         stepsPerLocalDay(localStore.stepSamples()).map { day ->
             StepsRecord(
-                startTime = Instant.ofEpochMilli(day.start),
+                startTime = Instant.ofEpochSecond(day.start),
                 startZoneOffset = offset(day.start),
-                endTime = Instant.ofEpochMilli(day.end + 1),
+                endTime = Instant.ofEpochSecond(day.end + 1),
                 endZoneOffset = offset(day.end),
                 count = day.count.toLong(),
                 metadata = Metadata.manualEntry(clientRecordId = "mihealth:steps:${day.day}"),
@@ -107,13 +109,13 @@ open class HealthConnectManager @Inject constructor(
             val start = daySamples.minOf { it.time }
             val end = daySamples.maxOf { it.time }
             HeartRateRecord(
-                startTime = Instant.ofEpochMilli(start),
+                startTime = Instant.ofEpochSecond(start),
                 startZoneOffset = offset(start),
-                endTime = Instant.ofEpochMilli(end + 1),
+                endTime = Instant.ofEpochSecond(end + 1),
                 endZoneOffset = offset(end),
                 samples = daySamples.map {
                     HeartRateRecord.Sample(
-                        time = Instant.ofEpochMilli(it.time),
+                        time = Instant.ofEpochSecond(it.time),
                         beatsPerMinute = it.value.toLong(),
                     )
                 },
@@ -127,7 +129,7 @@ open class HealthConnectManager @Inject constructor(
             .map { (day, daySamples) ->
                 val sample = daySamples.maxBy { it.time }
                 RestingHeartRateRecord(
-                    time = Instant.ofEpochMilli(sample.time),
+                    time = Instant.ofEpochSecond(sample.time),
                     zoneOffset = offset(sample.time),
                     beatsPerMinute = sample.value.toLong(),
                     metadata = Metadata.manualEntry(clientRecordId = "mihealth:resting:$day"),
@@ -137,7 +139,7 @@ open class HealthConnectManager @Inject constructor(
     private fun spo2Records(): List<Record> =
         localStore.metricSamples(MetricTypes.SPO2).map {
             OxygenSaturationRecord(
-                time = Instant.ofEpochMilli(it.time),
+                time = Instant.ofEpochSecond(it.time),
                 zoneOffset = offset(it.time),
                 percentage = Percentage(it.value),
                 metadata = Metadata.manualEntry(clientRecordId = "mihealth:spo2:${it.time}"),
@@ -145,18 +147,18 @@ open class HealthConnectManager @Inject constructor(
         }
 
     private fun sleepRecords(): List<Record> =
-        localStore.sleepSessions().map { session ->
-            val stages = session.stages.map { stage ->
+        localStore.sleepSessions().filter { it.end > it.start }.map { session ->
+            val stages = validSleepStages(session.stages).map { span ->
                 SleepSessionRecord.Stage(
-                    startTime = Instant.ofEpochMilli(stage.start),
-                    endTime = Instant.ofEpochMilli(stage.end),
-                    stage = sleepStageType(stage.state),
+                    startTime = Instant.ofEpochSecond(span.start),
+                    endTime = Instant.ofEpochSecond(span.end),
+                    stage = sleepStageType(span.state),
                 )
             }
             SleepSessionRecord(
-                startTime = Instant.ofEpochMilli(session.start),
+                startTime = Instant.ofEpochSecond(session.start),
                 startZoneOffset = offset(session.start),
-                endTime = Instant.ofEpochMilli(session.end),
+                endTime = Instant.ofEpochSecond(session.end),
                 endZoneOffset = offset(session.end),
                 title = null,
                 notes = null,
@@ -166,9 +168,9 @@ open class HealthConnectManager @Inject constructor(
         }
 
     private fun workoutRecords(): List<Record> =
-        localStore.workouts().map { workout ->
-            val start = Instant.ofEpochMilli(workout.start)
-            val end = Instant.ofEpochMilli(workout.end)
+        localStore.workouts().filter { it.end > it.start }.map { workout ->
+            val start = Instant.ofEpochSecond(workout.start)
+            val end = Instant.ofEpochSecond(workout.end)
             ExerciseSessionRecord(
                 start,
                 offset(workout.start),
@@ -180,8 +182,8 @@ open class HealthConnectManager @Inject constructor(
             )
         }
 
-    private fun dayKey(millis: Long): String =
-        Instant.ofEpochMilli(millis).atZone(zone).toLocalDate().toString()
+    private fun dayKey(seconds: Long): String =
+        Instant.ofEpochSecond(seconds).atZone(zone).toLocalDate().toString()
 
     private companion object {
         const val TAG = "HealthConnectManager"
