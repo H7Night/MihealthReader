@@ -1,29 +1,41 @@
 package com.jhon.mihealthreader.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.jhon.mihealthreader.R
 import com.jhon.mihealthreader.data.ParsedRepository
 import com.jhon.mihealthreader.ui.SportColors
-import com.jhon.mihealthreader.ui.charts.ChartWithAxes
+import com.jhon.mihealthreader.ui.SportIcons
+import com.jhon.mihealthreader.ui.charts.GhChart
+import com.jhon.mihealthreader.ui.charts.GhChartStyle
+import com.jhon.mihealthreader.ui.component.GhCard
+import com.jhon.mihealthreader.ui.component.GhEmptyState
+import com.jhon.mihealthreader.ui.component.GhIconPill
+import com.jhon.mihealthreader.ui.component.GhLoadingState
+import com.jhon.mihealthreader.ui.component.GhTopBar
+import com.jhon.mihealthreader.ui.component.shouldShowLoading
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -31,102 +43,123 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun WorkoutDetailScreen(
     parsedRepository: ParsedRepository,
+    dataLoaded: Boolean,
     index: Int,
     onBack: () -> Unit,
 ) {
+    if (shouldShowLoading(dataLoaded)) {
+        GhLoadingState(background = MaterialTheme.colorScheme.surface)
+        return
+    }
     val workouts by parsedRepository.workouts().collectAsState(initial = emptyList())
     val heart by parsedRepository.heartRate().collectAsState(initial = emptyList())
     val workout = workouts.getOrNull(index)
+    val scheme = MaterialTheme.colorScheme
 
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+        Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)
+            .verticalScroll(rememberScrollState()).statusBarsPadding()
+            .navigationBarsPadding().padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         if (workout == null) {
-            Text("暂无数据", modifier = Modifier.padding(20.dp))
+            GhTopBar(stringResource(R.string.workout_title), onBack)
+            GhEmptyState(stringResource(R.string.label_no_data))
             return
         }
-
-        val color = SportColors.of(workout.type)
+        GhTopBar(workout.typeName, onBack)
+        val sport = SportColors.of(workout.type)
         Surface(
-            color = color,
-            shape = RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp),
+            color = sport.copy(alpha = 0.14f),
+            contentColor = scheme.onSurface,
+            shape = MaterialTheme.shapes.large,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                TextButton(
-                    onClick = onBack,
-                    colors = ButtonDefaults.textButtonColors(contentColor = Color.White),
-                ) { Text("← 返回") }
-                Text(workout.typeName, style = MaterialTheme.typography.headlineMedium, color = Color.White)
-                Text(
-                    formatDateTime(workout.start),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.85f),
+            Row(Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
+                GhIconPill(
+                    SportIcons.of(workout.type),
+                    null,
+                    sport.copy(alpha = 0.20f),
+                    scheme.onSurface,
                 )
+                Spacer(Modifier.width(16.dp))
+                Column {
+                    Text(workout.typeName, style = MaterialTheme.typography.headlineSmall)
+                    Text(
+                        formatDateTime(workout.start),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = scheme.onSurfaceVariant,
+                    )
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Text(workout.calories.toString(), style = MaterialTheme.typography.displaySmall)
+                        Text(
+                            " " + stringResource(R.string.unit_kcal),
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.padding(bottom = 6.dp),
+                        )
+                    }
+                }
             }
         }
 
-        Surface(
-            color = MaterialTheme.colorScheme.surfaceVariant,
-            shape = RoundedCornerShape(24.dp),
-            modifier = Modifier.fillMaxWidth().padding(start = 20.dp, top = 12.dp, end = 20.dp),
-        ) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("运动汇总", style = MaterialTheme.typography.titleMedium)
-                Row {
-                    Text("${workout.calories}", style = MaterialTheme.typography.headlineLarge)
-                    Text(
-                        " kcal",
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(top = 12.dp),
-                    )
-                }
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    StatItem("运动时长", formatDurationSeconds(workout.durationSec))
-                    StatItem("平均心率", "${workout.avgHr ?: "-"} bpm")
-                    StatItem("最大心率", "${workout.maxHr ?: "-"} bpm")
-                }
-                workout.distanceMeters?.let {
-                    Text("距离 $it 米", style = MaterialTheme.typography.bodySmall)
-                }
-            }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            StatTile(
+                stringResource(R.string.detail_duration),
+                formatDurationText(workout.durationSec),
+                Modifier.weight(1f),
+            )
+            StatTile(
+                stringResource(R.string.detail_avg_hr),
+                "${workout.avgHr ?: "—"} " + stringResource(R.string.unit_bpm),
+                Modifier.weight(1f),
+            )
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            StatTile(
+                stringResource(R.string.detail_max_hr),
+                "${workout.maxHr ?: "—"} " + stringResource(R.string.unit_bpm),
+                Modifier.weight(1f),
+            )
+            StatTile(
+                stringResource(R.string.detail_distance),
+                workout.distanceMeters?.let { "$it " + stringResource(R.string.unit_meters) } ?: "—",
+                Modifier.weight(1f),
+            )
         }
 
         val samples = remember(heart, workout) {
             heart.filter { it.time in workout.start..workout.end }.sortedBy { it.time }
         }
-        Surface(
-            color = MaterialTheme.colorScheme.surfaceVariant,
-            shape = RoundedCornerShape(24.dp),
-            modifier = Modifier.fillMaxWidth().padding(start = 20.dp, top = 12.dp, end = 20.dp, bottom = 20.dp),
-        ) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("心率 (BPM)", style = MaterialTheme.typography.titleMedium)
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    StatItem("平均心率", "${workout.avgHr ?: "-"}")
-                    StatItem("最大心率", "${workout.maxHr ?: "-"}")
-                }
-                if (samples.size >= 2) {
-                    ChartWithAxes(
-                        values = samples.map { it.value.toFloat() },
-                        labels = samples.map { hhmm(it.time) },
-                        modifier = Modifier.fillMaxWidth(),
-                        color = MaterialTheme.colorScheme.primary,
-                        bars = false,
-                    )
-                } else {
-                    Text("无逐点心率数据", style = MaterialTheme.typography.bodySmall)
-                }
+        GhCard {
+            Text(stringResource(R.string.workout_heart_rate), style = MaterialTheme.typography.titleLarge)
+            if (samples.size >= 2) {
+                GhChart(
+                    values = samples.map { it.value.toFloat() },
+                    labels = samples.map { hhmm(it.time) },
+                    style = GhChartStyle.DottedLine,
+                    modifier = Modifier.padding(top = 12.dp),
+                )
+            } else {
+                Text(
+                    stringResource(R.string.workout_no_samples),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = scheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
             }
         }
     }
 }
 
 @Composable
-private fun StatItem(label: String, value: String) {
-    Column {
-        Text(label, style = MaterialTheme.typography.labelMedium)
-        Text(value, style = MaterialTheme.typography.titleMedium)
+private fun StatTile(label: String, value: String, modifier: Modifier) {
+    GhCard(modifier = modifier) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(value, style = MaterialTheme.typography.titleLarge)
     }
 }
 
@@ -134,3 +167,9 @@ private val HHMM = DateTimeFormatter.ofPattern("HH:mm")
 
 private fun hhmm(epochSeconds: Long): String =
     Instant.ofEpochSecond(epochSeconds).atZone(ZoneId.systemDefault()).format(HHMM)
+
+
+
+
+
+

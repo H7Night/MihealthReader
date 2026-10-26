@@ -23,6 +23,7 @@ fun Hypnogram(
     lightColor: Color,
     awakeColor: Color,
     napColor: Color,
+    gridColor: Color,
 ) {
     Canvas(modifier) {
         if (segments.isEmpty()) return@Canvas
@@ -34,7 +35,7 @@ fun Hypnogram(
         for (i in 1..2) {
             val y = size.height * i / 3f
             drawLine(
-                color = Color.Gray.copy(alpha = 0.25f),
+                color = gridColor,
                 start = Offset(0f, y),
                 end = Offset(size.width, y),
                 strokeWidth = 1.dp.toPx(),

@@ -78,10 +78,12 @@ fun CapsuleBars(values: List<Float>, modifier: Modifier, color: Color) {
     Canvas(modifier) {
         if (values.isEmpty()) return@Canvas
         val maxV = values.max().takeIf { it > 0f } ?: 1f
-        val gap = size.width * 0.035f
-        val barWidth = (size.width - gap * (values.size - 1)) / values.size
+        val layout = ghBarLayout(values.size, size.width)
+        val gap = layout.gap
+        val barWidth = layout.barWidth
         val radius = barWidth / 2f
         values.forEachIndexed { i, v ->
+            if (v <= 0f) return@forEachIndexed
             val barHeight = ((v / maxV) * size.height).coerceAtLeast(barWidth)
             drawRoundRect(
                 color = color,

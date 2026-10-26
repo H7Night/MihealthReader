@@ -254,3 +254,15 @@ adb exec-out run-as com.jhon.mihealthreader tar -c files/exports | tar -x
   - 幂等：连续两次同步，HC 中 `mihealth:*` 记录总数稳定在 977（steps 220 / hr 217 / resting 136 / sleep 337 / spo2 4 / workout 63），无重复。
   - 验证：`testDebugUnitTest` 97 项全绿、`lintDebug`/`assembleDebug` 通过。
 - 遗留：HC 中残留 2 条 1970 时间戳的旧记录（修复前构建写入），可在 Health Connect「删除此应用数据」清除；HC 二进制库位于 `/data/system_ce/0/healthconnect/healthconnect.db`。
+
+## 26. Google Health 风格界面重构（2026-10-26）
+
+- 设计系统：`GhTheme`（Monet 动态色 + API<31 回退）、`GhCard` / `GhPillButton` / `GhSegmentedControl` / `GhRing` / `GhMetricTile` / `GhBottomBar` / `GhLoadingState`。
+- 页面：今天（本周运动圆环 + 三色 hero + sheet）、视图（指标网格 + 分类）、指标详情（天/周/月/3个月/年 + 右轴图表 + 按桶列表）、睡眠详情、运动列表/详情、设置。
+- 本地化：`values` 英文 + `values-zh` 中文；`android:localeConfig` 支持按应用语言选择。
+- 自动化验证：`testDebugUnitTest` **140 项全绿**，`lintDebug` / `assembleDebug` 通过。
+- 真机（OnePlus CPH2747 / Android 16）：
+  - 亮色：今天、视图、设置、步数详情、睡眠详情、运动列表、运动详情均正常；Monet 取色为蓝/紫/薄荷，卡片 28dp，底栏选中胶囊正常。
+  - 暗色：今天、视图、设置正常；深色卡片对比度正常，底栏与状态栏图标适配。
+  - 修复：hero 单位换行（改为 22sp + 40dp 图标 + 0.8/1.2 分栏）、设置卡片宽度、日期区间三行换行（紧凑数字区间）、睡眠 tile 值换行、运动行 kcal/心率换行、深睡比例 pill 截断、运动类型图标。
+  - 已知未覆盖：暗色下的睡眠/运动截图因设备多次掉线未补拍；两页复用同一套 theme token 与组件。

@@ -2,34 +2,46 @@ package com.jhon.mihealthreader.ui.screens
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.health.connect.client.PermissionController
+import com.jhon.mihealthreader.BuildConfig
+import com.jhon.mihealthreader.R
 import com.jhon.mihealthreader.data.ExportManager
 import com.jhon.mihealthreader.local.BackendType
 import com.jhon.mihealthreader.local.LocalSummary
 import com.jhon.mihealthreader.ui.ExtractionState
+import com.jhon.mihealthreader.ui.component.GhCard
+import com.jhon.mihealthreader.ui.component.GhPageTitle
+import com.jhon.mihealthreader.ui.component.GhPillButton
+import com.jhon.mihealthreader.ui.component.GhSectionHeader
+import com.jhon.mihealthreader.ui.component.GhSegment
+import com.jhon.mihealthreader.ui.component.GhSegmentedControl
+import com.jhon.mihealthreader.ui.component.GhStatusPill
+import com.jhon.mihealthreader.ui.component.GhSwitchRow
+import java.text.DateFormat
 import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun SettingsScreen(
@@ -63,112 +75,198 @@ fun SettingsScreen(
         if (uri != null) {
             val file = exportManager.latestNormalized()
             if (file == null) {
-                exportMessage = "请先提取数据"
+                exportMessage = context.getString(R.string.settings_export_empty)
             } else {
                 val ok = runCatching {
                     context.contentResolver.openOutputStream(uri)?.use { out ->
                         file.inputStream().use { it.copyTo(out) }
                     }
                 }.isSuccess
-                exportMessage = if (ok) "已导出到所选位置" else "导出失败"
+                exportMessage = context.getString(
+                    if (ok) R.string.settings_export_done else R.string.settings_export_failed,
+                )
             }
         }
     }
 
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)
+            .verticalScroll(rememberScrollState())
+            .statusBarsPadding().padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        Text("设置", style = MaterialTheme.typography.headlineSmall)
-
-        Text("数据源", style = MaterialTheme.typography.titleMedium)
-        Text(
-            "当前：" + when (backend) {
-                BackendType.ROOT -> "Root"
-                BackendType.SHIZUKU -> "Shizuku"
-            } + "（" + when (rootGranted) {
-                true -> "已授权"
-                false -> "未授权"
-                null -> "检测中…"
-            } + "）",
+        GhPageTitle(
+            stringResource(R.string.title_settings),
+            subtitle = stringResource(R.string.settings_subtitle),
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Button(onClick = { onSelectBackend(BackendType.ROOT) }) { Text("Root") }
-            Button(onClick = { onSelectBackend(BackendType.SHIZUKU) }) { Text("Shizuku") }
-        }
-        if (backend == BackendType.SHIZUKU && !shizukuGranted) {
-            Button(onClick = onRequestShizuku) { Text("请求 Shizuku 权限") }
-            Text("Shizuku 需以 root 启动才能读取数据", style = MaterialTheme.typography.bodySmall)
-        }
-        Text("切换数据源后请重启 App 生效", style = MaterialTheme.typography.bodySmall)
 
-
-        Text("数据提取", style = MaterialTheme.typography.titleMedium)
-        Text(summaryText(summary), style = MaterialTheme.typography.bodyMedium)
-        when (state) {
-            ExtractionState.Idle -> Button(onClick = onStart) { Text("提取数据") }
-            is ExtractionState.Running -> {
-                Button(onClick = {}, enabled = false) { Text("提取中…") }
-                Text(state.step)
-            }
-            is ExtractionState.Success -> {
-                Text(if (state.newRecords > 0) "新增 ${state.newRecords} 条记录" else "无新数据")
-                Button(onClick = onStart) { Text("再次提取") }
-            }
-            is ExtractionState.Error -> {
-                Text("错误：${state.message}", color = MaterialTheme.colorScheme.error)
-                Button(onClick = onStart) { Text("重试") }
-            }
-        }
-
-
-        Text("数据导出", style = MaterialTheme.typography.titleMedium)
-        Text("导出规范化 JSON（normalized.json）", style = MaterialTheme.typography.bodySmall)
-        Button(onClick = {
-            if (exportManager.latestNormalized() == null) {
-                exportMessage = "请先提取数据"
-            } else {
-                exportLauncher.launch(exportManager.defaultExportName())
-            }
-        }) { Text("导出数据（JSON）") }
-        exportMessage?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
-
-
-        if (healthConnectAvailable) {
-            Text("Health Connect", style = MaterialTheme.typography.titleMedium)
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Text("同步到 Health Connect")
-                Switch(
-                    checked = healthConnectEnabled,
-                    onCheckedChange = { checked ->
-                        if (checked) healthPermissionLauncher.launch(healthConnectPermissions)
-                        else onToggleHealthConnect(false)
-                    },
+        GhSectionHeader(stringResource(R.string.settings_source))
+        GhCard {
+            GhSegmentedControl(
+                options = listOf(
+                    GhSegment(BackendType.ROOT, stringResource(R.string.settings_source_root)),
+                    GhSegment(BackendType.SHIZUKU, stringResource(R.string.settings_source_shizuku)),
+                ),
+                selected = backend,
+                onSelect = onSelectBackend,
+                unselectedContainer = MaterialTheme.colorScheme.surfaceContainerLowest,
+            )
+            Spacer(Modifier.height(12.dp))
+            GhStatusPill(
+                stringResource(
+                    R.string.settings_source_current,
+                    stringResource(
+                        if (backend == BackendType.ROOT) R.string.settings_source_root
+                        else R.string.settings_source_shizuku,
+                    ),
+                    backendStatus(rootGranted),
+                ),
+            )
+            if (backend == BackendType.SHIZUKU && !shizukuGranted) {
+                Spacer(Modifier.height(12.dp))
+                GhPillButton(stringResource(R.string.action_request_shizuku), onRequestShizuku)
+                Text(
+                    stringResource(R.string.settings_shizuku_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            if (healthConnectEnabled) {
-                Button(onClick = onSyncHealthConnect) { Text("立即同步") }
-            }
-            healthConnectMessage?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                stringResource(R.string.settings_source_restart),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
 
+        GhSectionHeader(stringResource(R.string.settings_extraction))
+        GhCard {
+            Text(summaryText(summary), style = MaterialTheme.typography.bodyMedium)
+            Spacer(Modifier.height(12.dp))
+            when (state) {
+                ExtractionState.Idle -> GhPillButton(stringResource(R.string.action_extract), onStart)
+                is ExtractionState.Running -> {
+                    GhPillButton(stringResource(R.string.action_extracting), {}, enabled = false)
+                    Text(state.step, style = MaterialTheme.typography.bodySmall)
+                }
+                is ExtractionState.Success -> {
+                    Text(
+                        if (state.newRecords > 0) {
+                            stringResource(R.string.settings_extract_new, state.newRecords)
+                        } else {
+                            stringResource(R.string.settings_extract_none)
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    GhPillButton(stringResource(R.string.action_extract_again), onStart)
+                }
+                is ExtractionState.Error -> {
+                    Text(
+                        stringResource(R.string.settings_error, state.message),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                    GhPillButton(stringResource(R.string.action_retry), onStart)
+                }
+            }
+        }
 
-        Text("关于", style = MaterialTheme.typography.titleMedium)
-        Text("MihealthReader · 读取「小米运动健康」本地数据库并做本地记录与分析")
+        GhSectionHeader(stringResource(R.string.settings_export))
+        GhCard {
+            Text(
+                stringResource(R.string.settings_export_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(8.dp))
+            GhPillButton(
+                text = stringResource(R.string.action_export),
+                onClick = {
+                    if (exportManager.latestNormalized() == null) {
+                        exportMessage = context.getString(R.string.settings_export_empty)
+                    } else {
+                        exportLauncher.launch(exportManager.defaultExportName())
+                    }
+                },
+            )
+            exportMessage?.let {
+                Text(
+                    it,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+            }
+        }
+
+        if (healthConnectAvailable) {
+            GhSectionHeader(stringResource(R.string.settings_health_connect))
+            GhSwitchRow(
+                title = stringResource(R.string.settings_sync_hc),
+                subtitle = null,
+                checked = healthConnectEnabled,
+                onCheckedChange = { checked ->
+                    if (checked) healthPermissionLauncher.launch(healthConnectPermissions)
+                    else onToggleHealthConnect(false)
+                },
+            )
+            if (healthConnectEnabled) {
+                GhPillButton(stringResource(R.string.action_sync), onSyncHealthConnect)
+            }
+            healthConnectMessage?.let {
+                Text(
+                    it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        } else {
+            GhStatusPill(
+                stringResource(R.string.settings_hc_unavailable),
+                container = MaterialTheme.colorScheme.surfaceContainer,
+            )
+        }
+
+        GhSectionHeader(stringResource(R.string.settings_about))
+        GhCard {
+            Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleLarge)
+            Text(
+                stringResource(R.string.settings_version, BuildConfig.VERSION_NAME),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                stringResource(R.string.settings_about_body),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+        }
     }
 }
 
-private val SUMMARY_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+@Composable
+private fun backendStatus(granted: Boolean?): String = when (granted) {
+    true -> stringResource(R.string.settings_source_granted)
+    false -> stringResource(R.string.settings_source_not_granted)
+    null -> stringResource(R.string.settings_source_checking)
+}
 
+private val SUMMARY_FORMAT = DateFormat.getDateTimeInstance(
+    DateFormat.MEDIUM,
+    DateFormat.SHORT,
+    Locale.getDefault(),
+)
+
+@Composable
 internal fun summaryText(summary: LocalSummary): String {
     val last = summary.lastExtractedAt
     val whenText = if (last == null) {
-        "尚未同步"
+        stringResource(R.string.settings_never_synced)
     } else {
-        "上次同步：" + Instant.ofEpochMilli(last).atZone(ZoneId.systemDefault()).format(SUMMARY_FORMAT)
+        stringResource(
+            R.string.settings_last_sync,
+            SUMMARY_FORMAT.format(Date.from(Instant.ofEpochMilli(last))),
+        )
     }
-    return "$whenText · 步数样本 ${summary.stepSamples} · 睡眠 ${summary.sleepSessions} 段"
+    return stringResource(R.string.settings_summary, whenText, summary.stepSamples, summary.sleepSessions)
 }
+

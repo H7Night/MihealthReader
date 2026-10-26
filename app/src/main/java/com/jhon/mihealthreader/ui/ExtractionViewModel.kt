@@ -5,6 +5,7 @@ import android.os.Build
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jhon.mihealthreader.BuildConfig
+import com.jhon.mihealthreader.R
 import com.jhon.mihealthreader.data.ParsedRepository
 import com.jhon.mihealthreader.data.health.HealthConnectManager
 import com.jhon.mihealthreader.di.IoDispatcher
@@ -106,23 +107,23 @@ class ExtractionViewModel @Inject constructor(
 
     private suspend fun runExtraction() {
         try {
-            _state.value = ExtractionState.Running("检测 root 权限")
+            _state.value = ExtractionState.Running(context.getString(R.string.extract_step_check_root))
             if (!rootShell.isGranted()) {
-                _state.value = ExtractionState.Error("root 权限被拒绝，请授予后重试")
+                _state.value = ExtractionState.Error(context.getString(R.string.extract_error_root_denied))
                 return
             }
 
-            _state.value = ExtractionState.Running("定位小米运动健康数据库")
+            _state.value = ExtractionState.Running(context.getString(R.string.extract_step_locate))
             val target = targetFinder.findCandidates().firstOrNull()
             if (target == null) {
-                _state.value = ExtractionState.Error("未找到目标应用数据库（可手动指定包名）")
+                _state.value = ExtractionState.Error(context.getString(R.string.extract_error_target_missing))
                 return
             }
 
-            _state.value = ExtractionState.Running("复制原始数据库快照")
+            _state.value = ExtractionState.Running(context.getString(R.string.extract_step_copy))
             val snapshot = extractor.extract(target, exportsDir)
 
-            _state.value = ExtractionState.Running("导出 JSON")
+            _state.value = ExtractionState.Running(context.getString(R.string.extract_step_export))
             val sidecarSuffixes = listOf("-wal", "-shm", "-journal")
             val dbFiles = snapshot.files.filter { file ->
                 file.isFile && sidecarSuffixes.none { file.name.endsWith(it) }
@@ -143,7 +144,7 @@ class ExtractionViewModel @Inject constructor(
                 File(snapshot.root, "manifest.json"),
             )
 
-            _state.value = ExtractionState.Running("解析睡眠与步数")
+            _state.value = ExtractionState.Running(context.getString(R.string.extract_step_parse))
             val parsed = normalizer.normalize(snapshot.root)
 
             val saved = localStore.save(parsed, snapshot.sourcePackage, System.currentTimeMillis())
@@ -182,16 +183,16 @@ class ExtractionViewModel @Inject constructor(
     fun syncHealthConnect() {
         viewModelScope.launch(io) {
             if (!healthConnectPreferences.enabled()) {
-                _healthConnectMessage.value = "未开启 Health Connect 同步"
+                _healthConnectMessage.value = context.getString(R.string.hc_disabled)
                 return@launch
             }
             if (!healthConnectManager.hasAllPermissions()) {
-                _healthConnectMessage.value = "需要授予全部 Health Connect 权限"
+                _healthConnectMessage.value = context.getString(R.string.hc_permissions)
                 return@launch
             }
-            _healthConnectMessage.value = "同步中…"
+            _healthConnectMessage.value = context.getString(R.string.hc_syncing)
             val written = runCatching { healthConnectManager.sync() }.getOrDefault(0)
-            _healthConnectMessage.value = "已写入 $written 条到 Health Connect"
+            _healthConnectMessage.value = context.getString(R.string.hc_written, written)
         }
     }
 
@@ -199,3 +200,4 @@ class ExtractionViewModel @Inject constructor(
         const val MIN_AUTO_INTERVAL_MS = 60_000L
     }
 }
+
